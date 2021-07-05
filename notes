@@ -1,4 +1,13 @@
 ; Composer
 ; Use "composer require <dependency>" to add <dependency> to the composer.json file
-; php composer.phar require robmorgan/phinx
+; $> php composer.phar require robmorgan/phinx
+
+
+; Phinx
+; $> vendor/bin/phinx init --format=yml
+; - edit phinx.yml DB host, username, password, schema w/ credentials suitable for altering schema
+
+; $> vendor/bin/phinx create <ClassName>
+; $> vendor/bin/phinx migrate -e testing
+; $> vendor/bin/phinx rollback
 
