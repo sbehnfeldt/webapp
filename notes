@@ -1,0 +1,4 @@
+; Composer
+; Use "composer require <dependency>" to add <dependency> to the composer.json file
+; php composer.phar require robmorgan/phinx
+
