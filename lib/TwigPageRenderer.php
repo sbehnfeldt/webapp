@@ -68,6 +68,10 @@ class TwigPageRenderer implements IPageRenderer
 
     public function render(int $page, array $context = []) : string
     {
-        return $this->getTwig()->render('index.html.twig', []);
+        $templates = [
+            self::PAGE_INDEX => 'index.html.twig',
+            self::PAGE_LOGIN => 'login.html.twig'
+        ];
+        return $this->getTwig()->render($templates[ $page], $context);
     }
 }
