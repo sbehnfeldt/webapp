@@ -50,26 +50,37 @@ class WebApp extends App
             throw new \Exception('Missing username or password');
         }
         $user = UserQuery::create()->findOneByUsername($username);
-        if ( !$user ) {
-            throw new \Exception(sprintf( 'Login denied: no account for user %s', $username));
+        if (!$user) {
+            throw new \Exception(sprintf('Login denied: no account for user %s', $username));
         }
-        if ( !password_verify($password, $user->getPassword())) {
-            throw new \Exception(sprintf( 'Login denied: incorrect username or password'));
+        if (!password_verify($password, $user->getPassword())) {
+            throw new \Exception(sprintf('Login denied: incorrect username or password'));
         }
-        $_SESSION[ 'user'] = $user;
+        $_SESSION['user'] = $user;
         return true;
     }
-
 
 
     public function run($silent = false)
     {
         $web = $this;
 
+        // Middleware checking whether user is logged in
+        $isAuthenticated = function (Request $req, Response $resp, $next) use ($web) {
+            if (empty($_SESSION['user'])) {
+                $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_LOGIN, []));
+                return $resp;
+            }
+
+            // User is authenticated
+            return $next($req, $resp);
+        };
+
         $this->get('/', function (Request $req, Response $resp, array $args) use ($web) {
             $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_INDEX, []));
             return $resp;
-        });
+        })->add($isAuthenticated);
+
 
         $this->get('/login', function (Request $req, Response $resp, array $args) use ($web) {
             $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_LOGIN, []));
@@ -81,7 +92,7 @@ class WebApp extends App
                 if (!$web->login($_POST['username'], $_POST['password'])) {
                     throw new \Exception('Unauthorized');
                 }
-                $resp = $resp->withHeader( 'Location', '/');
+                $resp = $resp->withHeader('Location', '/');
             } catch (\Exception $e) {
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_LOGIN, []));
             }
