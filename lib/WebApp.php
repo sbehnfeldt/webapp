@@ -60,6 +60,11 @@ class WebApp extends App
         return true;
     }
 
+    public function logout()
+    {
+        unset($_SESSION['user']);
+    }
+
 
     public function run($silent = false)
     {
@@ -96,6 +101,12 @@ class WebApp extends App
             } catch (\Exception $e) {
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_LOGIN, []));
             }
+            return $resp;
+        });
+
+        $this->get('/logout', function (Request $req, Response $resp, array $args) use ($web) {
+            $web->logout();
+            $resp = $resp->withHeader('Location', '/');
             return $resp;
         });
 
