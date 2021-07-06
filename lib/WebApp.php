@@ -2,6 +2,7 @@
 
 namespace Sbehnfeldt\Webapp;
 
+use Sbehnfeldt\Webapp\PropelDbEngine\UserQuery;
 use Slim\App;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -45,12 +46,17 @@ class WebApp extends App
 
     public function login(string $username, string $password): bool
     {
-        if (!$username) {
-            return false;
+        if (empty($username) || empty($password)) {
+            throw new \Exception('Missing username or password');
         }
-        if (!$password) {
-            return false;
+        $user = UserQuery::create()->findOneByUsername($username);
+        if ( !$user ) {
+            throw new \Exception(sprintf( 'Login denied: no account for user %s', $username));
         }
+        if ( !password_verify($password, $user->getPassword())) {
+            throw new \Exception(sprintf( 'Login denied: incorrect username or password'));
+        }
+        $_SESSION[ 'user'] = $user;
         return true;
     }
 
