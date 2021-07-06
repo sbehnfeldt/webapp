@@ -1,0 +1,45 @@
+form {
+
+  // Display child elements (div.form-box) in a column
+  display: flex;
+  flex-direction: column;
+
+  .form-box {
+
+    // Display elements of the .form-box (label and input element) next to each other
+    display: flex;
+    flex-direction: row;
+
+    label {
+      margin: auto; // Dimensions set by size of content, extra space
+
+      flex-basis: 15rem; // Set the width of the label
+      flex-shrink: 0; // Label doesn't shrink
+      flex-grow: 0; // Label doesn't grow
+
+      align-items: center;
+      text-align: right; // right-justify text within the label
+
+      &::after {
+        content: ":";
+      }
+    }
+
+    input[type=text],
+    input[type=email],
+    input[type=password],
+    input[type=number],
+    select {
+      display: block;
+      flex-grow: 1;
+
+      &::placeholder {
+        font-style: italic;
+      }
+    }
+
+    button {
+      margin: auto;
+    }
+  }
+}
