@@ -2,6 +2,7 @@
 
 namespace Sbehnfeldt\Webapp;
 
+use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt;
 use Sbehnfeldt\Webapp\PropelDbEngine\UserQuery;
 use Slim\App;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -44,19 +45,64 @@ class WebApp extends App
     }
 
 
+    /**
+     * Search "users" table for matching submitted username and password
+     *
+     * @param string $username
+     * @param string $password
+     * @return bool
+     * @throws \Propel\Runtime\Exception\PropelException
+     */
     public function login(string $username, string $password): bool
     {
         if (empty($username) || empty($password)) {
-            throw new \Exception('Missing username or password');
+            $note = sprintf( 'Invalid login attempt: missing %s', empty($username) && empty($password) ? 'username and password' : empty($username) ? 'username' : 'password');
+            $attempt = new LoginAttempt();
+            $attempt->setAttemptedAt(time());
+            $attempt->setPass(0);
+            $attempt->setNote($note);
+            $attempt->save();
+            throw new \Exception($note);
         }
+
+        // Look up user in "users" table
         $user = UserQuery::create()->findOneByUsername($username);
         if (!$user) {
-            throw new \Exception(sprintf('Login denied: no account for user %s', $username));
+            $note = sprintf('Login denied: no account for user "%s"', $username);
+            $attempt = new LoginAttempt();
+            $attempt->setUsername($username);
+            $attempt->setAttemptedAt(time());
+            $attempt->setPass(0);
+            $attempt->setNote($note);
+            $attempt->save();
+            $this->getLogger()->info($note);
+            throw new \Exception($note);
         }
+
+        // Verify the submitted password
         if (!password_verify($password, $user->getPassword())) {
-            throw new \Exception(sprintf('Login denied: incorrect username or password'));
+            // Wrong password
+            $note = sprintf('Login denied: incorrect password for user "%s"', $username);
+            $attempt = new LoginAttempt();
+            $attempt->setUsername($username);
+            $attempt->setAttemptedAt(time());
+            $attempt->setPass(0);
+            $attempt->setNote($note);
+            $attempt->save();
+            $this->getLogger()->info($note);
+
+            throw new \Exception($note);
         }
+
+        // User authenticated
+        $attempt = new LoginAttempt();
+        $attempt->setUsername($username);
+        $attempt->setAttemptedAt(time());
+        $attempt->setPass(1);
+        $attempt->setNote('OK');
+        $attempt->save();
         $_SESSION['user'] = $user;
+
         return true;
     }
 
