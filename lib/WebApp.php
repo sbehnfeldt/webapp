@@ -156,7 +156,10 @@ class WebApp extends App
 
     public function logout()
     {
-        unset($_SESSION['user']);
+        if ( isset($_SESSION[ 'user'])) {
+            $this->getLogger()->info( sprintf( 'User "%s" logged out', $_SESSION[ 'user' ]->getUsername()));
+            unset($_SESSION['user']);
+        }
     }
 
 
