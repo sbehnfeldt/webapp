@@ -2,6 +2,8 @@
 
 namespace Sbehnfeldt\Webapp;
 
+use Monolog\Handler\StreamHandler;
+use Monolog\Logger;
 use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt;
 use Sbehnfeldt\Webapp\PropelDbEngine\UserQuery;
 use Slim\App;
@@ -11,19 +13,25 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class WebApp extends App
 {
+    /** @var IPageRenderer */
     private $renderer;
+
+    /** @var Logger */
+    private $logger;
 
     public function __construct($container = [])
     {
         parent::__construct($container);
-        $this->renderer = null;
+        $this->renderer
+            = $this->logger
+            = null;
     }
 
 
     /**
      * @return mixed
      */
-    public function getRenderer()
+    public function getRenderer(): ?IPageRenderer
     {
         if (!$this->renderer) {
             if ($this->getContainer()->has('renderer')) {
@@ -44,6 +52,43 @@ class WebApp extends App
         $this->renderer = $renderer;
     }
 
+    /**
+     * @return Logger
+     */
+    public function getLogger(): ?Logger
+    {
+        if ( !$this->logger) {
+            if ( $this->getContainer()->has( 'logger')) {
+                $this->logger = $this->getContainer()->get('logger');
+            }
+            if ( !$this->logger) {
+                if ( $this->getContainer()->get('settings')->has('monolog')) {
+                    $cfg = $this->getContainer()->get('settings')->get('monolog');
+                } else {
+                    $cfg = [
+                        'directory' => '.',
+                        'filename' => 'log.log',
+                        'channel' => 'default'
+                    ];
+                }
+                $cfg = $this->getContainer()->get('settings')->get('monolog');
+                $handler = new StreamHandler(implode( DIRECTORY_SEPARATOR, [ '..',  $cfg[ 'directory' ], $cfg[ 'filename' ]]));
+                $this->logger = new Logger($cfg[ 'channel']);
+                $this->logger->pushHandler($handler);
+            }
+        }
+        return $this->logger;
+    }
+
+    /**
+     * @param Logger $logger
+     */
+    public function setLogger(?Logger $logger): void
+    {
+        $this->logger = $logger;
+    }
+
+
 
     /**
      * Search "users" table for matching submitted username and password
@@ -56,12 +101,14 @@ class WebApp extends App
     public function login(string $username, string $password): bool
     {
         if (empty($username) || empty($password)) {
-            $note = sprintf( 'Invalid login attempt: missing %s', empty($username) && empty($password) ? 'username and password' : empty($username) ? 'username' : 'password');
+            $note = sprintf('Invalid login attempt: missing %s', (empty($username) && empty($password)) ? 'username and password' : (empty($username) ? 'username' : 'password'));
             $attempt = new LoginAttempt();
+            $attempt->setUsername('');
             $attempt->setAttemptedAt(time());
             $attempt->setPass(0);
             $attempt->setNote($note);
             $attempt->save();
+            $this->getLogger()->notice($note);
             throw new \Exception($note);
         }
 
@@ -75,7 +122,7 @@ class WebApp extends App
             $attempt->setPass(0);
             $attempt->setNote($note);
             $attempt->save();
-            $this->getLogger()->info($note);
+            $this->getLogger()->notice($note);
             throw new \Exception($note);
         }
 
@@ -89,7 +136,7 @@ class WebApp extends App
             $attempt->setPass(0);
             $attempt->setNote($note);
             $attempt->save();
-            $this->getLogger()->info($note);
+            $this->getLogger()->notice($note);
 
             throw new \Exception($note);
         }
@@ -101,6 +148,7 @@ class WebApp extends App
         $attempt->setPass(1);
         $attempt->setNote('OK');
         $attempt->save();
+        $this->getLogger()->info(sprintf( 'User "%s" logged in successfully', $username));
         $_SESSION['user'] = $user;
 
         return true;
