@@ -20,6 +20,27 @@ CREATE TABLE `login_attempts`
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- token_auths
+-- ---------------------------------------------------------------------
+
+DROP TABLE IF EXISTS `token_auths`;
+
+CREATE TABLE `token_auths`
+(
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `cookie_hash` VARCHAR(255) NOT NULL,
+    `expires` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `user_id` INTEGER NOT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `user_id` (`user_id`),
+    CONSTRAINT `token_auths_ibfk_1`
+        FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- users
 -- ---------------------------------------------------------------------
 

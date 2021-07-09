@@ -11,12 +11,12 @@ use Propel\Runtime\Exception\PropelException;
 use Propel\Runtime\Map\RelationMap;
 use Propel\Runtime\Map\TableMap;
 use Propel\Runtime\Map\TableMapTrait;
-use Sbehnfeldt\Webapp\PropelDbEngine\User;
-use Sbehnfeldt\Webapp\PropelDbEngine\UserQuery;
+use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth;
+use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuthQuery;
 
 
 /**
- * This class defines the structure of the 'users' table.
+ * This class defines the structure of the 'token_auths' table.
  *
  *
  *
@@ -25,7 +25,7 @@ use Sbehnfeldt\Webapp\PropelDbEngine\UserQuery;
  * ORDER BY clause to know whether it needs to apply SQL to make the ORDER BY case-insensitive
  * (i.e. if it's a text column type).
  */
-class UserTableMap extends TableMap
+class TokenAuthTableMap extends TableMap
 {
     use InstancePoolTrait;
     use TableMapTrait;
@@ -33,7 +33,7 @@ class UserTableMap extends TableMap
     /**
      * The (dot-path) name of this class
      */
-    const CLASS_NAME = '.Map.UserTableMap';
+    const CLASS_NAME = '.Map.TokenAuthTableMap';
 
     /**
      * The default database name for this class
@@ -43,17 +43,17 @@ class UserTableMap extends TableMap
     /**
      * The table name for this class
      */
-    const TABLE_NAME = 'users';
+    const TABLE_NAME = 'token_auths';
 
     /**
      * The related Propel class for this table
      */
-    const OM_CLASS = '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\User';
+    const OM_CLASS = '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\TokenAuth';
 
     /**
      * A class that can be returned by this tableMap
      */
-    const CLASS_DEFAULT = 'User';
+    const CLASS_DEFAULT = 'TokenAuth';
 
     /**
      * The total number of columns
@@ -73,22 +73,22 @@ class UserTableMap extends TableMap
     /**
      * the column name for the id field
      */
-    const COL_ID = 'users.id';
+    const COL_ID = 'token_auths.id';
 
     /**
-     * the column name for the username field
+     * the column name for the cookie_hash field
      */
-    const COL_USERNAME = 'users.username';
+    const COL_COOKIE_HASH = 'token_auths.cookie_hash';
 
     /**
-     * the column name for the password field
+     * the column name for the expires field
      */
-    const COL_PASSWORD = 'users.password';
+    const COL_EXPIRES = 'token_auths.expires';
 
     /**
-     * the column name for the email field
+     * the column name for the user_id field
      */
-    const COL_EMAIL = 'users.email';
+    const COL_USER_ID = 'token_auths.user_id';
 
     /**
      * The default string format for model objects of the related table
@@ -102,10 +102,10 @@ class UserTableMap extends TableMap
      * e.g. self::$fieldNames[self::TYPE_PHPNAME][0] = 'Id'
      */
     protected static $fieldNames = array (
-        self::TYPE_PHPNAME       => array('Id', 'Username', 'Password', 'Email', ),
-        self::TYPE_CAMELNAME     => array('id', 'username', 'password', 'email', ),
-        self::TYPE_COLNAME       => array(UserTableMap::COL_ID, UserTableMap::COL_USERNAME, UserTableMap::COL_PASSWORD, UserTableMap::COL_EMAIL, ),
-        self::TYPE_FIELDNAME     => array('id', 'username', 'password', 'email', ),
+        self::TYPE_PHPNAME       => array('Id', 'CookieHash', 'Expires', 'UserId', ),
+        self::TYPE_CAMELNAME     => array('id', 'cookieHash', 'expires', 'userId', ),
+        self::TYPE_COLNAME       => array(TokenAuthTableMap::COL_ID, TokenAuthTableMap::COL_COOKIE_HASH, TokenAuthTableMap::COL_EXPIRES, TokenAuthTableMap::COL_USER_ID, ),
+        self::TYPE_FIELDNAME     => array('id', 'cookie_hash', 'expires', 'user_id', ),
         self::TYPE_NUM           => array(0, 1, 2, 3, )
     );
 
@@ -116,10 +116,10 @@ class UserTableMap extends TableMap
      * e.g. self::$fieldKeys[self::TYPE_PHPNAME]['Id'] = 0
      */
     protected static $fieldKeys = array (
-        self::TYPE_PHPNAME       => array('Id' => 0, 'Username' => 1, 'Password' => 2, 'Email' => 3, ),
-        self::TYPE_CAMELNAME     => array('id' => 0, 'username' => 1, 'password' => 2, 'email' => 3, ),
-        self::TYPE_COLNAME       => array(UserTableMap::COL_ID => 0, UserTableMap::COL_USERNAME => 1, UserTableMap::COL_PASSWORD => 2, UserTableMap::COL_EMAIL => 3, ),
-        self::TYPE_FIELDNAME     => array('id' => 0, 'username' => 1, 'password' => 2, 'email' => 3, ),
+        self::TYPE_PHPNAME       => array('Id' => 0, 'CookieHash' => 1, 'Expires' => 2, 'UserId' => 3, ),
+        self::TYPE_CAMELNAME     => array('id' => 0, 'cookieHash' => 1, 'expires' => 2, 'userId' => 3, ),
+        self::TYPE_COLNAME       => array(TokenAuthTableMap::COL_ID => 0, TokenAuthTableMap::COL_COOKIE_HASH => 1, TokenAuthTableMap::COL_EXPIRES => 2, TokenAuthTableMap::COL_USER_ID => 3, ),
+        self::TYPE_FIELDNAME     => array('id' => 0, 'cookie_hash' => 1, 'expires' => 2, 'user_id' => 3, ),
         self::TYPE_NUM           => array(0, 1, 2, 3, )
     );
 
@@ -130,33 +130,35 @@ class UserTableMap extends TableMap
      */
     protected $normalizedColumnNameMap = [
         'Id' => 'ID',
-        'User.Id' => 'ID',
+        'TokenAuth.Id' => 'ID',
         'id' => 'ID',
-        'user.id' => 'ID',
-        'UserTableMap::COL_ID' => 'ID',
+        'tokenAuth.id' => 'ID',
+        'TokenAuthTableMap::COL_ID' => 'ID',
         'COL_ID' => 'ID',
-        'users.id' => 'ID',
-        'Username' => 'USERNAME',
-        'User.Username' => 'USERNAME',
-        'username' => 'USERNAME',
-        'user.username' => 'USERNAME',
-        'UserTableMap::COL_USERNAME' => 'USERNAME',
-        'COL_USERNAME' => 'USERNAME',
-        'users.username' => 'USERNAME',
-        'Password' => 'PASSWORD',
-        'User.Password' => 'PASSWORD',
-        'password' => 'PASSWORD',
-        'user.password' => 'PASSWORD',
-        'UserTableMap::COL_PASSWORD' => 'PASSWORD',
-        'COL_PASSWORD' => 'PASSWORD',
-        'users.password' => 'PASSWORD',
-        'Email' => 'EMAIL',
-        'User.Email' => 'EMAIL',
-        'email' => 'EMAIL',
-        'user.email' => 'EMAIL',
-        'UserTableMap::COL_EMAIL' => 'EMAIL',
-        'COL_EMAIL' => 'EMAIL',
-        'users.email' => 'EMAIL',
+        'token_auths.id' => 'ID',
+        'CookieHash' => 'COOKIE_HASH',
+        'TokenAuth.CookieHash' => 'COOKIE_HASH',
+        'cookieHash' => 'COOKIE_HASH',
+        'tokenAuth.cookieHash' => 'COOKIE_HASH',
+        'TokenAuthTableMap::COL_COOKIE_HASH' => 'COOKIE_HASH',
+        'COL_COOKIE_HASH' => 'COOKIE_HASH',
+        'cookie_hash' => 'COOKIE_HASH',
+        'token_auths.cookie_hash' => 'COOKIE_HASH',
+        'Expires' => 'EXPIRES',
+        'TokenAuth.Expires' => 'EXPIRES',
+        'expires' => 'EXPIRES',
+        'tokenAuth.expires' => 'EXPIRES',
+        'TokenAuthTableMap::COL_EXPIRES' => 'EXPIRES',
+        'COL_EXPIRES' => 'EXPIRES',
+        'token_auths.expires' => 'EXPIRES',
+        'UserId' => 'USER_ID',
+        'TokenAuth.UserId' => 'USER_ID',
+        'userId' => 'USER_ID',
+        'tokenAuth.userId' => 'USER_ID',
+        'TokenAuthTableMap::COL_USER_ID' => 'USER_ID',
+        'COL_USER_ID' => 'USER_ID',
+        'user_id' => 'USER_ID',
+        'token_auths.user_id' => 'USER_ID',
     ];
 
     /**
@@ -169,17 +171,17 @@ class UserTableMap extends TableMap
     public function initialize()
     {
         // attributes
-        $this->setName('users');
-        $this->setPhpName('User');
+        $this->setName('token_auths');
+        $this->setPhpName('TokenAuth');
         $this->setIdentifierQuoting(false);
-        $this->setClassName('\\Sbehnfeldt\\Webapp\\PropelDbEngine\\User');
+        $this->setClassName('\\Sbehnfeldt\\Webapp\\PropelDbEngine\\TokenAuth');
         $this->setPackage('');
         $this->setUseIdGenerator(true);
         // columns
         $this->addPrimaryKey('id', 'Id', 'INTEGER', true, null, null);
-        $this->addColumn('username', 'Username', 'VARCHAR', true, 31, null);
-        $this->addColumn('password', 'Password', 'VARCHAR', true, 63, null);
-        $this->addColumn('email', 'Email', 'VARCHAR', true, 255, null);
+        $this->addColumn('cookie_hash', 'CookieHash', 'VARCHAR', true, 255, null);
+        $this->addColumn('expires', 'Expires', 'TIMESTAMP', true, null, 'CURRENT_TIMESTAMP');
+        $this->addForeignKey('user_id', 'UserId', 'INTEGER', 'users', 'id', true, null, null);
     } // initialize()
 
     /**
@@ -187,24 +189,14 @@ class UserTableMap extends TableMap
      */
     public function buildRelations()
     {
-        $this->addRelation('TokenAuth', '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\TokenAuth', RelationMap::ONE_TO_MANY, array (
+        $this->addRelation('User', '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\User', RelationMap::MANY_TO_ONE, array (
   0 =>
   array (
     0 => ':user_id',
     1 => ':id',
   ),
-), 'CASCADE', 'NO ACTION', 'TokenAuths', false);
+), 'CASCADE', 'NO ACTION', null, false);
     } // buildRelations()
-
-    /**
-     * Method to invalidate the instance pool of all tables related to users     * by a foreign key with ON DELETE CASCADE
-     */
-    public static function clearRelatedInstancePool()
-    {
-        // Invalidate objects in related instance pools,
-        // since one or more of them may be deleted by ON DELETE CASCADE/SETNULL rule.
-        TokenAuthTableMap::clearInstancePool();
-    }
 
     /**
      * Retrieves a string version of the primary key from the DB resultset row that can be used to uniquely identify a row in this table.
@@ -263,7 +255,7 @@ class UserTableMap extends TableMap
      */
     public static function getOMClass($withPrefix = true)
     {
-        return $withPrefix ? UserTableMap::CLASS_DEFAULT : UserTableMap::OM_CLASS;
+        return $withPrefix ? TokenAuthTableMap::CLASS_DEFAULT : TokenAuthTableMap::OM_CLASS;
     }
 
     /**
@@ -277,22 +269,22 @@ class UserTableMap extends TableMap
      *
      * @throws PropelException Any exceptions caught during processing will be
      *                         rethrown wrapped into a PropelException.
-     * @return array           (User object, last column rank)
+     * @return array           (TokenAuth object, last column rank)
      */
     public static function populateObject($row, $offset = 0, $indexType = TableMap::TYPE_NUM)
     {
-        $key = UserTableMap::getPrimaryKeyHashFromRow($row, $offset, $indexType);
-        if (null !== ($obj = UserTableMap::getInstanceFromPool($key))) {
+        $key = TokenAuthTableMap::getPrimaryKeyHashFromRow($row, $offset, $indexType);
+        if (null !== ($obj = TokenAuthTableMap::getInstanceFromPool($key))) {
             // We no longer rehydrate the object, since this can cause data loss.
             // See http://www.propelorm.org/ticket/509
             // $obj->hydrate($row, $offset, true); // rehydrate
-            $col = $offset + UserTableMap::NUM_HYDRATE_COLUMNS;
+            $col = $offset + TokenAuthTableMap::NUM_HYDRATE_COLUMNS;
         } else {
-            $cls = UserTableMap::OM_CLASS;
-            /** @var User $obj */
+            $cls = TokenAuthTableMap::OM_CLASS;
+            /** @var TokenAuth $obj */
             $obj = new $cls();
             $col = $obj->hydrate($row, $offset, false, $indexType);
-            UserTableMap::addInstanceToPool($obj, $key);
+            TokenAuthTableMap::addInstanceToPool($obj, $key);
         }
 
         return array($obj, $col);
@@ -315,18 +307,18 @@ class UserTableMap extends TableMap
         $cls = static::getOMClass(false);
         // populate the object(s)
         while ($row = $dataFetcher->fetch()) {
-            $key = UserTableMap::getPrimaryKeyHashFromRow($row, 0, $dataFetcher->getIndexType());
-            if (null !== ($obj = UserTableMap::getInstanceFromPool($key))) {
+            $key = TokenAuthTableMap::getPrimaryKeyHashFromRow($row, 0, $dataFetcher->getIndexType());
+            if (null !== ($obj = TokenAuthTableMap::getInstanceFromPool($key))) {
                 // We no longer rehydrate the object, since this can cause data loss.
                 // See http://www.propelorm.org/ticket/509
                 // $obj->hydrate($row, 0, true); // rehydrate
                 $results[] = $obj;
             } else {
-                /** @var User $obj */
+                /** @var TokenAuth $obj */
                 $obj = new $cls();
                 $obj->hydrate($row);
                 $results[] = $obj;
-                UserTableMap::addInstanceToPool($obj, $key);
+                TokenAuthTableMap::addInstanceToPool($obj, $key);
             } // if key exists
         }
 
@@ -347,15 +339,15 @@ class UserTableMap extends TableMap
     public static function addSelectColumns(Criteria $criteria, $alias = null)
     {
         if (null === $alias) {
-            $criteria->addSelectColumn(UserTableMap::COL_ID);
-            $criteria->addSelectColumn(UserTableMap::COL_USERNAME);
-            $criteria->addSelectColumn(UserTableMap::COL_PASSWORD);
-            $criteria->addSelectColumn(UserTableMap::COL_EMAIL);
+            $criteria->addSelectColumn(TokenAuthTableMap::COL_ID);
+            $criteria->addSelectColumn(TokenAuthTableMap::COL_COOKIE_HASH);
+            $criteria->addSelectColumn(TokenAuthTableMap::COL_EXPIRES);
+            $criteria->addSelectColumn(TokenAuthTableMap::COL_USER_ID);
         } else {
             $criteria->addSelectColumn($alias . '.id');
-            $criteria->addSelectColumn($alias . '.username');
-            $criteria->addSelectColumn($alias . '.password');
-            $criteria->addSelectColumn($alias . '.email');
+            $criteria->addSelectColumn($alias . '.cookie_hash');
+            $criteria->addSelectColumn($alias . '.expires');
+            $criteria->addSelectColumn($alias . '.user_id');
         }
     }
 
@@ -373,15 +365,15 @@ class UserTableMap extends TableMap
     public static function removeSelectColumns(Criteria $criteria, $alias = null)
     {
         if (null === $alias) {
-            $criteria->removeSelectColumn(UserTableMap::COL_ID);
-            $criteria->removeSelectColumn(UserTableMap::COL_USERNAME);
-            $criteria->removeSelectColumn(UserTableMap::COL_PASSWORD);
-            $criteria->removeSelectColumn(UserTableMap::COL_EMAIL);
+            $criteria->removeSelectColumn(TokenAuthTableMap::COL_ID);
+            $criteria->removeSelectColumn(TokenAuthTableMap::COL_COOKIE_HASH);
+            $criteria->removeSelectColumn(TokenAuthTableMap::COL_EXPIRES);
+            $criteria->removeSelectColumn(TokenAuthTableMap::COL_USER_ID);
         } else {
             $criteria->removeSelectColumn($alias . '.id');
-            $criteria->removeSelectColumn($alias . '.username');
-            $criteria->removeSelectColumn($alias . '.password');
-            $criteria->removeSelectColumn($alias . '.email');
+            $criteria->removeSelectColumn($alias . '.cookie_hash');
+            $criteria->removeSelectColumn($alias . '.expires');
+            $criteria->removeSelectColumn($alias . '.user_id');
         }
     }
 
@@ -394,13 +386,13 @@ class UserTableMap extends TableMap
      */
     public static function getTableMap()
     {
-        return Propel::getServiceContainer()->getDatabaseMap(UserTableMap::DATABASE_NAME)->getTable(UserTableMap::TABLE_NAME);
+        return Propel::getServiceContainer()->getDatabaseMap(TokenAuthTableMap::DATABASE_NAME)->getTable(TokenAuthTableMap::TABLE_NAME);
     }
 
     /**
-     * Performs a DELETE on the database, given a User or Criteria object OR a primary key value.
+     * Performs a DELETE on the database, given a TokenAuth or Criteria object OR a primary key value.
      *
-     * @param mixed               $values Criteria or User object or primary key or array of primary keys
+     * @param mixed               $values Criteria or TokenAuth object or primary key or array of primary keys
      *              which is used to create the DELETE statement
      * @param  ConnectionInterface $con the connection to use
      * @return int             The number of affected rows (if supported by underlying database driver).  This includes CASCADE-related rows
@@ -411,27 +403,27 @@ class UserTableMap extends TableMap
      public static function doDelete($values, ConnectionInterface $con = null)
      {
         if (null === $con) {
-            $con = Propel::getServiceContainer()->getWriteConnection(UserTableMap::DATABASE_NAME);
+            $con = Propel::getServiceContainer()->getWriteConnection(TokenAuthTableMap::DATABASE_NAME);
         }
 
         if ($values instanceof Criteria) {
             // rename for clarity
             $criteria = $values;
-        } elseif ($values instanceof \Sbehnfeldt\Webapp\PropelDbEngine\User) { // it's a model object
+        } elseif ($values instanceof \Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth) { // it's a model object
             // create criteria based on pk values
             $criteria = $values->buildPkeyCriteria();
         } else { // it's a primary key, or an array of pks
-            $criteria = new Criteria(UserTableMap::DATABASE_NAME);
-            $criteria->add(UserTableMap::COL_ID, (array) $values, Criteria::IN);
+            $criteria = new Criteria(TokenAuthTableMap::DATABASE_NAME);
+            $criteria->add(TokenAuthTableMap::COL_ID, (array) $values, Criteria::IN);
         }
 
-        $query = UserQuery::create()->mergeWith($criteria);
+        $query = TokenAuthQuery::create()->mergeWith($criteria);
 
         if ($values instanceof Criteria) {
-            UserTableMap::clearInstancePool();
+            TokenAuthTableMap::clearInstancePool();
         } elseif (!is_object($values)) { // it's a primary key, or an array of pks
             foreach ((array) $values as $singleval) {
-                UserTableMap::removeInstanceFromPool($singleval);
+                TokenAuthTableMap::removeInstanceFromPool($singleval);
             }
         }
 
@@ -439,20 +431,20 @@ class UserTableMap extends TableMap
     }
 
     /**
-     * Deletes all rows from the users table.
+     * Deletes all rows from the token_auths table.
      *
      * @param ConnectionInterface $con the connection to use
      * @return int The number of affected rows (if supported by underlying database driver).
      */
     public static function doDeleteAll(ConnectionInterface $con = null)
     {
-        return UserQuery::create()->doDeleteAll($con);
+        return TokenAuthQuery::create()->doDeleteAll($con);
     }
 
     /**
-     * Performs an INSERT on the database, given a User or Criteria object.
+     * Performs an INSERT on the database, given a TokenAuth or Criteria object.
      *
-     * @param mixed               $criteria Criteria or User object containing data that is used to create the INSERT statement.
+     * @param mixed               $criteria Criteria or TokenAuth object containing data that is used to create the INSERT statement.
      * @param ConnectionInterface $con the ConnectionInterface connection to use
      * @return mixed           The new primary key.
      * @throws PropelException Any exceptions caught during processing will be
@@ -461,22 +453,22 @@ class UserTableMap extends TableMap
     public static function doInsert($criteria, ConnectionInterface $con = null)
     {
         if (null === $con) {
-            $con = Propel::getServiceContainer()->getWriteConnection(UserTableMap::DATABASE_NAME);
+            $con = Propel::getServiceContainer()->getWriteConnection(TokenAuthTableMap::DATABASE_NAME);
         }
 
         if ($criteria instanceof Criteria) {
             $criteria = clone $criteria; // rename for clarity
         } else {
-            $criteria = $criteria->buildCriteria(); // build Criteria from User object
+            $criteria = $criteria->buildCriteria(); // build Criteria from TokenAuth object
         }
 
-        if ($criteria->containsKey(UserTableMap::COL_ID) && $criteria->keyContainsValue(UserTableMap::COL_ID) ) {
-            throw new PropelException('Cannot insert a value for auto-increment primary key ('.UserTableMap::COL_ID.')');
+        if ($criteria->containsKey(TokenAuthTableMap::COL_ID) && $criteria->keyContainsValue(TokenAuthTableMap::COL_ID) ) {
+            throw new PropelException('Cannot insert a value for auto-increment primary key ('.TokenAuthTableMap::COL_ID.')');
         }
 
 
         // Set the correct dbName
-        $query = UserQuery::create()->mergeWith($criteria);
+        $query = TokenAuthQuery::create()->mergeWith($criteria);
 
         // use transaction because $criteria could contain info
         // for more than one table (I guess, conceivably)
@@ -485,4 +477,4 @@ class UserTableMap extends TableMap
         });
     }
 
-} // UserTableMap
+} // TokenAuthTableMap

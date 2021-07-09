@@ -2,6 +2,7 @@
 
 namespace Sbehnfeldt\Webapp\PropelDbEngine\Base;
 
+use \DateTime;
 use \Exception;
 use \PDO;
 use Propel\Runtime\Propel;
@@ -9,33 +10,31 @@ use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\ActiveQuery\ModelCriteria;
 use Propel\Runtime\ActiveRecord\ActiveRecordInterface;
 use Propel\Runtime\Collection\Collection;
-use Propel\Runtime\Collection\ObjectCollection;
 use Propel\Runtime\Connection\ConnectionInterface;
 use Propel\Runtime\Exception\BadMethodCallException;
 use Propel\Runtime\Exception\LogicException;
 use Propel\Runtime\Exception\PropelException;
 use Propel\Runtime\Map\TableMap;
 use Propel\Runtime\Parser\AbstractParser;
-use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth as ChildTokenAuth;
+use Propel\Runtime\Util\PropelDateTime;
 use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuthQuery as ChildTokenAuthQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\User as ChildUser;
 use Sbehnfeldt\Webapp\PropelDbEngine\UserQuery as ChildUserQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\Map\TokenAuthTableMap;
-use Sbehnfeldt\Webapp\PropelDbEngine\Map\UserTableMap;
 
 /**
- * Base class that represents a row from the 'users' table.
+ * Base class that represents a row from the 'token_auths' table.
  *
  *
  *
  * @package    propel.generator..Base
  */
-abstract class User implements ActiveRecordInterface
+abstract class TokenAuth implements ActiveRecordInterface
 {
     /**
      * TableMap class name
      */
-    const TABLE_MAP = '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\Map\\UserTableMap';
+    const TABLE_MAP = '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\Map\\TokenAuthTableMap';
 
 
     /**
@@ -72,31 +71,31 @@ abstract class User implements ActiveRecordInterface
     protected $id;
 
     /**
-     * The value for the username field.
+     * The value for the cookie_hash field.
      *
      * @var        string
      */
-    protected $username;
+    protected $cookie_hash;
 
     /**
-     * The value for the password field.
+     * The value for the expires field.
      *
-     * @var        string
+     * Note: this column has a database default value of: (expression) CURRENT_TIMESTAMP
+     * @var        DateTime
      */
-    protected $password;
+    protected $expires;
 
     /**
-     * The value for the email field.
+     * The value for the user_id field.
      *
-     * @var        string
+     * @var        int
      */
-    protected $email;
+    protected $user_id;
 
     /**
-     * @var        ObjectCollection|ChildTokenAuth[] Collection to store aggregation of ChildTokenAuth objects.
+     * @var        ChildUser
      */
-    protected $collTokenAuths;
-    protected $collTokenAuthsPartial;
+    protected $aUser;
 
     /**
      * Flag to prevent endless save loop, if this object is referenced
@@ -107,16 +106,22 @@ abstract class User implements ActiveRecordInterface
     protected $alreadyInSave = false;
 
     /**
-     * An array of objects scheduled for deletion.
-     * @var ObjectCollection|ChildTokenAuth[]
+     * Applies default values to this object.
+     * This method should be called from the object's constructor (or
+     * equivalent initialization method).
+     * @see __construct()
      */
-    protected $tokenAuthsScheduledForDeletion = null;
+    public function applyDefaultValues()
+    {
+    }
 
     /**
-     * Initializes internal state of Sbehnfeldt\Webapp\PropelDbEngine\Base\User object.
+     * Initializes internal state of Sbehnfeldt\Webapp\PropelDbEngine\Base\TokenAuth object.
+     * @see applyDefaults()
      */
     public function __construct()
     {
+        $this->applyDefaultValues();
     }
 
     /**
@@ -206,9 +211,9 @@ abstract class User implements ActiveRecordInterface
     }
 
     /**
-     * Compares this with another <code>User</code> instance.  If
-     * <code>obj</code> is an instance of <code>User</code>, delegates to
-     * <code>equals(User)</code>.  Otherwise, returns <code>false</code>.
+     * Compares this with another <code>TokenAuth</code> instance.  If
+     * <code>obj</code> is an instance of <code>TokenAuth</code>, delegates to
+     * <code>equals(TokenAuth)</code>.  Otherwise, returns <code>false</code>.
      *
      * @param  mixed   $obj The object to compare to.
      * @return boolean Whether equal to the object specified.
@@ -347,40 +352,52 @@ abstract class User implements ActiveRecordInterface
     }
 
     /**
-     * Get the [username] column value.
+     * Get the [cookie_hash] column value.
      *
      * @return string
      */
-    public function getUsername()
+    public function getCookieHash()
     {
-        return $this->username;
+        return $this->cookie_hash;
     }
 
     /**
-     * Get the [password] column value.
+     * Get the [optionally formatted] temporal [expires] column value.
      *
-     * @return string
+     *
+     * @param string|null $format The date/time format string (either date()-style or strftime()-style).
+     *   If format is NULL, then the raw DateTime object will be returned.
+     *
+     * @return string|DateTime Formatted date/time value as string or DateTime object (if format is NULL), NULL if column is NULL, and 0 if column value is 0000-00-00 00:00:00
+     *
+     * @throws PropelException - if unable to parse/validate the date/time value.
+     *
+     * @psalm-return ($format is null ? DateTime : string)
      */
-    public function getPassword()
+    public function getExpires($format = null)
     {
-        return $this->password;
+        if ($format === null) {
+            return $this->expires;
+        } else {
+            return $this->expires instanceof \DateTimeInterface ? $this->expires->format($format) : null;
+        }
     }
 
     /**
-     * Get the [email] column value.
+     * Get the [user_id] column value.
      *
-     * @return string
+     * @return int
      */
-    public function getEmail()
+    public function getUserId()
     {
-        return $this->email;
+        return $this->user_id;
     }
 
     /**
      * Set the value of [id] column.
      *
      * @param int $v New value
-     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\User The current object (for fluent API support)
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth The current object (for fluent API support)
      */
     public function setId($v)
     {
@@ -390,71 +407,75 @@ abstract class User implements ActiveRecordInterface
 
         if ($this->id !== $v) {
             $this->id = $v;
-            $this->modifiedColumns[UserTableMap::COL_ID] = true;
+            $this->modifiedColumns[TokenAuthTableMap::COL_ID] = true;
         }
 
         return $this;
     } // setId()
 
     /**
-     * Set the value of [username] column.
+     * Set the value of [cookie_hash] column.
      *
      * @param string $v New value
-     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\User The current object (for fluent API support)
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth The current object (for fluent API support)
      */
-    public function setUsername($v)
+    public function setCookieHash($v)
     {
         if ($v !== null) {
             $v = (string) $v;
         }
 
-        if ($this->username !== $v) {
-            $this->username = $v;
-            $this->modifiedColumns[UserTableMap::COL_USERNAME] = true;
+        if ($this->cookie_hash !== $v) {
+            $this->cookie_hash = $v;
+            $this->modifiedColumns[TokenAuthTableMap::COL_COOKIE_HASH] = true;
         }
 
         return $this;
-    } // setUsername()
+    } // setCookieHash()
 
     /**
-     * Set the value of [password] column.
+     * Sets the value of [expires] column to a normalized version of the date/time value specified.
      *
-     * @param string $v New value
-     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\User The current object (for fluent API support)
+     * @param  string|integer|\DateTimeInterface $v string, integer (timestamp), or \DateTimeInterface value.
+     *               Empty strings are treated as NULL.
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth The current object (for fluent API support)
      */
-    public function setPassword($v)
+    public function setExpires($v)
     {
-        if ($v !== null) {
-            $v = (string) $v;
-        }
-
-        if ($this->password !== $v) {
-            $this->password = $v;
-            $this->modifiedColumns[UserTableMap::COL_PASSWORD] = true;
-        }
+        $dt = PropelDateTime::newInstance($v, null, 'DateTime');
+        if ($this->expires !== null || $dt !== null) {
+            if ($this->expires === null || $dt === null || $dt->format("Y-m-d H:i:s.u") !== $this->expires->format("Y-m-d H:i:s.u")) {
+                $this->expires = $dt === null ? null : clone $dt;
+                $this->modifiedColumns[TokenAuthTableMap::COL_EXPIRES] = true;
+            }
+        } // if either are not null
 
         return $this;
-    } // setPassword()
+    } // setExpires()
 
     /**
-     * Set the value of [email] column.
+     * Set the value of [user_id] column.
      *
-     * @param string $v New value
-     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\User The current object (for fluent API support)
+     * @param int $v New value
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth The current object (for fluent API support)
      */
-    public function setEmail($v)
+    public function setUserId($v)
     {
         if ($v !== null) {
-            $v = (string) $v;
+            $v = (int) $v;
         }
 
-        if ($this->email !== $v) {
-            $this->email = $v;
-            $this->modifiedColumns[UserTableMap::COL_EMAIL] = true;
+        if ($this->user_id !== $v) {
+            $this->user_id = $v;
+            $this->modifiedColumns[TokenAuthTableMap::COL_USER_ID] = true;
+        }
+
+        if ($this->aUser !== null && $this->aUser->getId() !== $v) {
+            $this->aUser = null;
         }
 
         return $this;
-    } // setEmail()
+    } // setUserId()
 
     /**
      * Indicates whether the columns in this object are only set to default values.
@@ -492,17 +513,20 @@ abstract class User implements ActiveRecordInterface
     {
         try {
 
-            $col = $row[TableMap::TYPE_NUM == $indexType ? 0 + $startcol : UserTableMap::translateFieldName('Id', TableMap::TYPE_PHPNAME, $indexType)];
+            $col = $row[TableMap::TYPE_NUM == $indexType ? 0 + $startcol : TokenAuthTableMap::translateFieldName('Id', TableMap::TYPE_PHPNAME, $indexType)];
             $this->id = (null !== $col) ? (int) $col : null;
 
-            $col = $row[TableMap::TYPE_NUM == $indexType ? 1 + $startcol : UserTableMap::translateFieldName('Username', TableMap::TYPE_PHPNAME, $indexType)];
-            $this->username = (null !== $col) ? (string) $col : null;
+            $col = $row[TableMap::TYPE_NUM == $indexType ? 1 + $startcol : TokenAuthTableMap::translateFieldName('CookieHash', TableMap::TYPE_PHPNAME, $indexType)];
+            $this->cookie_hash = (null !== $col) ? (string) $col : null;
 
-            $col = $row[TableMap::TYPE_NUM == $indexType ? 2 + $startcol : UserTableMap::translateFieldName('Password', TableMap::TYPE_PHPNAME, $indexType)];
-            $this->password = (null !== $col) ? (string) $col : null;
+            $col = $row[TableMap::TYPE_NUM == $indexType ? 2 + $startcol : TokenAuthTableMap::translateFieldName('Expires', TableMap::TYPE_PHPNAME, $indexType)];
+            if ($col === '0000-00-00 00:00:00') {
+                $col = null;
+            }
+            $this->expires = (null !== $col) ? PropelDateTime::newInstance($col, null, 'DateTime') : null;
 
-            $col = $row[TableMap::TYPE_NUM == $indexType ? 3 + $startcol : UserTableMap::translateFieldName('Email', TableMap::TYPE_PHPNAME, $indexType)];
-            $this->email = (null !== $col) ? (string) $col : null;
+            $col = $row[TableMap::TYPE_NUM == $indexType ? 3 + $startcol : TokenAuthTableMap::translateFieldName('UserId', TableMap::TYPE_PHPNAME, $indexType)];
+            $this->user_id = (null !== $col) ? (int) $col : null;
             $this->resetModified();
 
             $this->setNew(false);
@@ -511,10 +535,10 @@ abstract class User implements ActiveRecordInterface
                 $this->ensureConsistency();
             }
 
-            return $startcol + 4; // 4 = UserTableMap::NUM_HYDRATE_COLUMNS.
+            return $startcol + 4; // 4 = TokenAuthTableMap::NUM_HYDRATE_COLUMNS.
 
         } catch (Exception $e) {
-            throw new PropelException(sprintf('Error populating %s object', '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\User'), 0, $e);
+            throw new PropelException(sprintf('Error populating %s object', '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\TokenAuth'), 0, $e);
         }
     }
 
@@ -533,6 +557,9 @@ abstract class User implements ActiveRecordInterface
      */
     public function ensureConsistency()
     {
+        if ($this->aUser !== null && $this->user_id !== $this->aUser->getId()) {
+            $this->aUser = null;
+        }
     } // ensureConsistency
 
     /**
@@ -556,13 +583,13 @@ abstract class User implements ActiveRecordInterface
         }
 
         if ($con === null) {
-            $con = Propel::getServiceContainer()->getReadConnection(UserTableMap::DATABASE_NAME);
+            $con = Propel::getServiceContainer()->getReadConnection(TokenAuthTableMap::DATABASE_NAME);
         }
 
         // We don't need to alter the object instance pool; we're just modifying this instance
         // already in the pool.
 
-        $dataFetcher = ChildUserQuery::create(null, $this->buildPkeyCriteria())->setFormatter(ModelCriteria::FORMAT_STATEMENT)->find($con);
+        $dataFetcher = ChildTokenAuthQuery::create(null, $this->buildPkeyCriteria())->setFormatter(ModelCriteria::FORMAT_STATEMENT)->find($con);
         $row = $dataFetcher->fetch();
         $dataFetcher->close();
         if (!$row) {
@@ -572,8 +599,7 @@ abstract class User implements ActiveRecordInterface
 
         if ($deep) {  // also de-associate any related objects?
 
-            $this->collTokenAuths = null;
-
+            $this->aUser = null;
         } // if (deep)
     }
 
@@ -583,8 +609,8 @@ abstract class User implements ActiveRecordInterface
      * @param      ConnectionInterface $con
      * @return void
      * @throws PropelException
-     * @see User::setDeleted()
-     * @see User::isDeleted()
+     * @see TokenAuth::setDeleted()
+     * @see TokenAuth::isDeleted()
      */
     public function delete(ConnectionInterface $con = null)
     {
@@ -593,11 +619,11 @@ abstract class User implements ActiveRecordInterface
         }
 
         if ($con === null) {
-            $con = Propel::getServiceContainer()->getWriteConnection(UserTableMap::DATABASE_NAME);
+            $con = Propel::getServiceContainer()->getWriteConnection(TokenAuthTableMap::DATABASE_NAME);
         }
 
         $con->transaction(function () use ($con) {
-            $deleteQuery = ChildUserQuery::create()
+            $deleteQuery = ChildTokenAuthQuery::create()
                 ->filterByPrimaryKey($this->getPrimaryKey());
             $ret = $this->preDelete($con);
             if ($ret) {
@@ -632,7 +658,7 @@ abstract class User implements ActiveRecordInterface
         }
 
         if ($con === null) {
-            $con = Propel::getServiceContainer()->getWriteConnection(UserTableMap::DATABASE_NAME);
+            $con = Propel::getServiceContainer()->getWriteConnection(TokenAuthTableMap::DATABASE_NAME);
         }
 
         return $con->transaction(function () use ($con) {
@@ -651,7 +677,7 @@ abstract class User implements ActiveRecordInterface
                     $this->postUpdate($con);
                 }
                 $this->postSave($con);
-                UserTableMap::addInstanceToPool($this);
+                TokenAuthTableMap::addInstanceToPool($this);
             } else {
                 $affectedRows = 0;
             }
@@ -677,6 +703,18 @@ abstract class User implements ActiveRecordInterface
         if (!$this->alreadyInSave) {
             $this->alreadyInSave = true;
 
+            // We call the save method on the following object(s) if they
+            // were passed to this object by their corresponding set
+            // method.  This object relates to these object(s) by a
+            // foreign key reference.
+
+            if ($this->aUser !== null) {
+                if ($this->aUser->isModified() || $this->aUser->isNew()) {
+                    $affectedRows += $this->aUser->save($con);
+                }
+                $this->setUser($this->aUser);
+            }
+
             if ($this->isNew() || $this->isModified()) {
                 // persist changes
                 if ($this->isNew()) {
@@ -686,23 +724,6 @@ abstract class User implements ActiveRecordInterface
                     $affectedRows += $this->doUpdate($con);
                 }
                 $this->resetModified();
-            }
-
-            if ($this->tokenAuthsScheduledForDeletion !== null) {
-                if (!$this->tokenAuthsScheduledForDeletion->isEmpty()) {
-                    \Sbehnfeldt\Webapp\PropelDbEngine\TokenAuthQuery::create()
-                        ->filterByPrimaryKeys($this->tokenAuthsScheduledForDeletion->getPrimaryKeys(false))
-                        ->delete($con);
-                    $this->tokenAuthsScheduledForDeletion = null;
-                }
-            }
-
-            if ($this->collTokenAuths !== null) {
-                foreach ($this->collTokenAuths as $referrerFK) {
-                    if (!$referrerFK->isDeleted() && ($referrerFK->isNew() || $referrerFK->isModified())) {
-                        $affectedRows += $referrerFK->save($con);
-                    }
-                }
             }
 
             $this->alreadyInSave = false;
@@ -725,27 +746,27 @@ abstract class User implements ActiveRecordInterface
         $modifiedColumns = array();
         $index = 0;
 
-        $this->modifiedColumns[UserTableMap::COL_ID] = true;
+        $this->modifiedColumns[TokenAuthTableMap::COL_ID] = true;
         if (null !== $this->id) {
-            throw new PropelException('Cannot insert a value for auto-increment primary key (' . UserTableMap::COL_ID . ')');
+            throw new PropelException('Cannot insert a value for auto-increment primary key (' . TokenAuthTableMap::COL_ID . ')');
         }
 
          // check the columns in natural order for more readable SQL queries
-        if ($this->isColumnModified(UserTableMap::COL_ID)) {
+        if ($this->isColumnModified(TokenAuthTableMap::COL_ID)) {
             $modifiedColumns[':p' . $index++]  = 'id';
         }
-        if ($this->isColumnModified(UserTableMap::COL_USERNAME)) {
-            $modifiedColumns[':p' . $index++]  = 'username';
+        if ($this->isColumnModified(TokenAuthTableMap::COL_COOKIE_HASH)) {
+            $modifiedColumns[':p' . $index++]  = 'cookie_hash';
         }
-        if ($this->isColumnModified(UserTableMap::COL_PASSWORD)) {
-            $modifiedColumns[':p' . $index++]  = 'password';
+        if ($this->isColumnModified(TokenAuthTableMap::COL_EXPIRES)) {
+            $modifiedColumns[':p' . $index++]  = 'expires';
         }
-        if ($this->isColumnModified(UserTableMap::COL_EMAIL)) {
-            $modifiedColumns[':p' . $index++]  = 'email';
+        if ($this->isColumnModified(TokenAuthTableMap::COL_USER_ID)) {
+            $modifiedColumns[':p' . $index++]  = 'user_id';
         }
 
         $sql = sprintf(
-            'INSERT INTO users (%s) VALUES (%s)',
+            'INSERT INTO token_auths (%s) VALUES (%s)',
             implode(', ', $modifiedColumns),
             implode(', ', array_keys($modifiedColumns))
         );
@@ -757,14 +778,14 @@ abstract class User implements ActiveRecordInterface
                     case 'id':
                         $stmt->bindValue($identifier, $this->id, PDO::PARAM_INT);
                         break;
-                    case 'username':
-                        $stmt->bindValue($identifier, $this->username, PDO::PARAM_STR);
+                    case 'cookie_hash':
+                        $stmt->bindValue($identifier, $this->cookie_hash, PDO::PARAM_STR);
                         break;
-                    case 'password':
-                        $stmt->bindValue($identifier, $this->password, PDO::PARAM_STR);
+                    case 'expires':
+                        $stmt->bindValue($identifier, $this->expires ? $this->expires->format("Y-m-d H:i:s.u") : null, PDO::PARAM_STR);
                         break;
-                    case 'email':
-                        $stmt->bindValue($identifier, $this->email, PDO::PARAM_STR);
+                    case 'user_id':
+                        $stmt->bindValue($identifier, $this->user_id, PDO::PARAM_INT);
                         break;
                 }
             }
@@ -812,7 +833,7 @@ abstract class User implements ActiveRecordInterface
      */
     public function getByName($name, $type = TableMap::TYPE_PHPNAME)
     {
-        $pos = UserTableMap::translateFieldName($name, $type, TableMap::TYPE_NUM);
+        $pos = TokenAuthTableMap::translateFieldName($name, $type, TableMap::TYPE_NUM);
         $field = $this->getByPosition($pos);
 
         return $field;
@@ -832,13 +853,13 @@ abstract class User implements ActiveRecordInterface
                 return $this->getId();
                 break;
             case 1:
-                return $this->getUsername();
+                return $this->getCookieHash();
                 break;
             case 2:
-                return $this->getPassword();
+                return $this->getExpires();
                 break;
             case 3:
-                return $this->getEmail();
+                return $this->getUserId();
                 break;
             default:
                 return null;
@@ -864,37 +885,41 @@ abstract class User implements ActiveRecordInterface
     public function toArray($keyType = TableMap::TYPE_PHPNAME, $includeLazyLoadColumns = true, $alreadyDumpedObjects = array(), $includeForeignObjects = false)
     {
 
-        if (isset($alreadyDumpedObjects['User'][$this->hashCode()])) {
+        if (isset($alreadyDumpedObjects['TokenAuth'][$this->hashCode()])) {
             return '*RECURSION*';
         }
-        $alreadyDumpedObjects['User'][$this->hashCode()] = true;
-        $keys = UserTableMap::getFieldNames($keyType);
+        $alreadyDumpedObjects['TokenAuth'][$this->hashCode()] = true;
+        $keys = TokenAuthTableMap::getFieldNames($keyType);
         $result = array(
             $keys[0] => $this->getId(),
-            $keys[1] => $this->getUsername(),
-            $keys[2] => $this->getPassword(),
-            $keys[3] => $this->getEmail(),
+            $keys[1] => $this->getCookieHash(),
+            $keys[2] => $this->getExpires(),
+            $keys[3] => $this->getUserId(),
         );
+        if ($result[$keys[2]] instanceof \DateTimeInterface) {
+            $result[$keys[2]] = $result[$keys[2]]->format('Y-m-d H:i:s.u');
+        }
+
         $virtualColumns = $this->virtualColumns;
         foreach ($virtualColumns as $key => $virtualColumn) {
             $result[$key] = $virtualColumn;
         }
 
         if ($includeForeignObjects) {
-            if (null !== $this->collTokenAuths) {
+            if (null !== $this->aUser) {
 
                 switch ($keyType) {
                     case TableMap::TYPE_CAMELNAME:
-                        $key = 'tokenAuths';
+                        $key = 'user';
                         break;
                     case TableMap::TYPE_FIELDNAME:
-                        $key = 'token_authss';
+                        $key = 'users';
                         break;
                     default:
-                        $key = 'TokenAuths';
+                        $key = 'User';
                 }
 
-                $result[$key] = $this->collTokenAuths->toArray(null, false, $keyType, $includeLazyLoadColumns, $alreadyDumpedObjects);
+                $result[$key] = $this->aUser->toArray($keyType, $includeLazyLoadColumns,  $alreadyDumpedObjects, true);
             }
         }
 
@@ -910,11 +935,11 @@ abstract class User implements ActiveRecordInterface
      *                one of the class type constants TableMap::TYPE_PHPNAME, TableMap::TYPE_CAMELNAME
      *                TableMap::TYPE_COLNAME, TableMap::TYPE_FIELDNAME, TableMap::TYPE_NUM.
      *                Defaults to TableMap::TYPE_PHPNAME.
-     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\User
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth
      */
     public function setByName($name, $value, $type = TableMap::TYPE_PHPNAME)
     {
-        $pos = UserTableMap::translateFieldName($name, $type, TableMap::TYPE_NUM);
+        $pos = TokenAuthTableMap::translateFieldName($name, $type, TableMap::TYPE_NUM);
 
         return $this->setByPosition($pos, $value);
     }
@@ -925,7 +950,7 @@ abstract class User implements ActiveRecordInterface
      *
      * @param  int $pos position in xml schema
      * @param  mixed $value field value
-     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\User
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth
      */
     public function setByPosition($pos, $value)
     {
@@ -934,13 +959,13 @@ abstract class User implements ActiveRecordInterface
                 $this->setId($value);
                 break;
             case 1:
-                $this->setUsername($value);
+                $this->setCookieHash($value);
                 break;
             case 2:
-                $this->setPassword($value);
+                $this->setExpires($value);
                 break;
             case 3:
-                $this->setEmail($value);
+                $this->setUserId($value);
                 break;
         } // switch()
 
@@ -962,23 +987,23 @@ abstract class User implements ActiveRecordInterface
      *
      * @param      array  $arr     An array to populate the object from.
      * @param      string $keyType The type of keys the array uses.
-     * @return     $this|\Sbehnfeldt\Webapp\PropelDbEngine\User
+     * @return     $this|\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth
      */
     public function fromArray($arr, $keyType = TableMap::TYPE_PHPNAME)
     {
-        $keys = UserTableMap::getFieldNames($keyType);
+        $keys = TokenAuthTableMap::getFieldNames($keyType);
 
         if (array_key_exists($keys[0], $arr)) {
             $this->setId($arr[$keys[0]]);
         }
         if (array_key_exists($keys[1], $arr)) {
-            $this->setUsername($arr[$keys[1]]);
+            $this->setCookieHash($arr[$keys[1]]);
         }
         if (array_key_exists($keys[2], $arr)) {
-            $this->setPassword($arr[$keys[2]]);
+            $this->setExpires($arr[$keys[2]]);
         }
         if (array_key_exists($keys[3], $arr)) {
-            $this->setEmail($arr[$keys[3]]);
+            $this->setUserId($arr[$keys[3]]);
         }
 
         return $this;
@@ -1001,7 +1026,7 @@ abstract class User implements ActiveRecordInterface
      * @param string $data The source data to import from
      * @param string $keyType The type of keys the array uses.
      *
-     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\User The current object, for fluid interface
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth The current object, for fluid interface
      */
     public function importFrom($parser, $data, $keyType = TableMap::TYPE_PHPNAME)
     {
@@ -1021,19 +1046,19 @@ abstract class User implements ActiveRecordInterface
      */
     public function buildCriteria()
     {
-        $criteria = new Criteria(UserTableMap::DATABASE_NAME);
+        $criteria = new Criteria(TokenAuthTableMap::DATABASE_NAME);
 
-        if ($this->isColumnModified(UserTableMap::COL_ID)) {
-            $criteria->add(UserTableMap::COL_ID, $this->id);
+        if ($this->isColumnModified(TokenAuthTableMap::COL_ID)) {
+            $criteria->add(TokenAuthTableMap::COL_ID, $this->id);
         }
-        if ($this->isColumnModified(UserTableMap::COL_USERNAME)) {
-            $criteria->add(UserTableMap::COL_USERNAME, $this->username);
+        if ($this->isColumnModified(TokenAuthTableMap::COL_COOKIE_HASH)) {
+            $criteria->add(TokenAuthTableMap::COL_COOKIE_HASH, $this->cookie_hash);
         }
-        if ($this->isColumnModified(UserTableMap::COL_PASSWORD)) {
-            $criteria->add(UserTableMap::COL_PASSWORD, $this->password);
+        if ($this->isColumnModified(TokenAuthTableMap::COL_EXPIRES)) {
+            $criteria->add(TokenAuthTableMap::COL_EXPIRES, $this->expires);
         }
-        if ($this->isColumnModified(UserTableMap::COL_EMAIL)) {
-            $criteria->add(UserTableMap::COL_EMAIL, $this->email);
+        if ($this->isColumnModified(TokenAuthTableMap::COL_USER_ID)) {
+            $criteria->add(TokenAuthTableMap::COL_USER_ID, $this->user_id);
         }
 
         return $criteria;
@@ -1051,8 +1076,8 @@ abstract class User implements ActiveRecordInterface
      */
     public function buildPkeyCriteria()
     {
-        $criteria = ChildUserQuery::create();
-        $criteria->add(UserTableMap::COL_ID, $this->id);
+        $criteria = ChildTokenAuthQuery::create();
+        $criteria->add(TokenAuthTableMap::COL_ID, $this->id);
 
         return $criteria;
     }
@@ -1114,30 +1139,16 @@ abstract class User implements ActiveRecordInterface
      * If desired, this method can also make copies of all associated (fkey referrers)
      * objects.
      *
-     * @param      object $copyObj An object of \Sbehnfeldt\Webapp\PropelDbEngine\User (or compatible) type.
+     * @param      object $copyObj An object of \Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth (or compatible) type.
      * @param      boolean $deepCopy Whether to also copy all rows that refer (by fkey) to the current row.
      * @param      boolean $makeNew Whether to reset autoincrement PKs and make the object new.
      * @throws PropelException
      */
     public function copyInto($copyObj, $deepCopy = false, $makeNew = true)
     {
-        $copyObj->setUsername($this->getUsername());
-        $copyObj->setPassword($this->getPassword());
-        $copyObj->setEmail($this->getEmail());
-
-        if ($deepCopy) {
-            // important: temporarily setNew(false) because this affects the behavior of
-            // the getter/setter methods for fkey referrer objects.
-            $copyObj->setNew(false);
-
-            foreach ($this->getTokenAuths() as $relObj) {
-                if ($relObj !== $this) {  // ensure that we don't try to copy a reference to ourselves
-                    $copyObj->addTokenAuth($relObj->copy($deepCopy));
-                }
-            }
-
-        } // if ($deepCopy)
-
+        $copyObj->setCookieHash($this->getCookieHash());
+        $copyObj->setExpires($this->getExpires());
+        $copyObj->setUserId($this->getUserId());
         if ($makeNew) {
             $copyObj->setNew(true);
             $copyObj->setId(NULL); // this is a auto-increment column, so set to default value
@@ -1153,7 +1164,7 @@ abstract class User implements ActiveRecordInterface
      * objects.
      *
      * @param  boolean $deepCopy Whether to also copy all rows that refer (by fkey) to the current row.
-     * @return \Sbehnfeldt\Webapp\PropelDbEngine\User Clone of current object.
+     * @return \Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth Clone of current object.
      * @throws PropelException
      */
     public function copy($deepCopy = false)
@@ -1166,255 +1177,55 @@ abstract class User implements ActiveRecordInterface
         return $copyObj;
     }
 
-
     /**
-     * Initializes a collection based on the name of a relation.
-     * Avoids crafting an 'init[$relationName]s' method name
-     * that wouldn't work when StandardEnglishPluralizer is used.
+     * Declares an association between this object and a ChildUser object.
      *
-     * @param      string $relationName The name of the relation to initialize
-     * @return void
-     */
-    public function initRelation($relationName)
-    {
-        if ('TokenAuth' === $relationName) {
-            $this->initTokenAuths();
-            return;
-        }
-    }
-
-    /**
-     * Clears out the collTokenAuths collection
-     *
-     * This does not modify the database; however, it will remove any associated objects, causing
-     * them to be refetched by subsequent calls to accessor method.
-     *
-     * @return void
-     * @see        addTokenAuths()
-     */
-    public function clearTokenAuths()
-    {
-        $this->collTokenAuths = null; // important to set this to NULL since that means it is uninitialized
-    }
-
-    /**
-     * Reset is the collTokenAuths collection loaded partially.
-     */
-    public function resetPartialTokenAuths($v = true)
-    {
-        $this->collTokenAuthsPartial = $v;
-    }
-
-    /**
-     * Initializes the collTokenAuths collection.
-     *
-     * By default this just sets the collTokenAuths collection to an empty array (like clearcollTokenAuths());
-     * however, you may wish to override this method in your stub class to provide setting appropriate
-     * to your application -- for example, setting the initial array to the values stored in database.
-     *
-     * @param      boolean $overrideExisting If set to true, the method call initializes
-     *                                        the collection even if it is not empty
-     *
-     * @return void
-     */
-    public function initTokenAuths($overrideExisting = true)
-    {
-        if (null !== $this->collTokenAuths && !$overrideExisting) {
-            return;
-        }
-
-        $collectionClassName = TokenAuthTableMap::getTableMap()->getCollectionClassName();
-
-        $this->collTokenAuths = new $collectionClassName;
-        $this->collTokenAuths->setModel('\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth');
-    }
-
-    /**
-     * Gets an array of ChildTokenAuth objects which contain a foreign key that references this object.
-     *
-     * If the $criteria is not null, it is used to always fetch the results from the database.
-     * Otherwise the results are fetched from the database the first time, then cached.
-     * Next time the same method is called without $criteria, the cached collection is returned.
-     * If this ChildUser is new, it will return
-     * an empty collection or the current collection; the criteria is ignored on a new object.
-     *
-     * @param      Criteria $criteria optional Criteria object to narrow the query
-     * @param      ConnectionInterface $con optional connection object
-     * @return ObjectCollection|ChildTokenAuth[] List of ChildTokenAuth objects
+     * @param  ChildUser $v
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth The current object (for fluent API support)
      * @throws PropelException
      */
-    public function getTokenAuths(Criteria $criteria = null, ConnectionInterface $con = null)
+    public function setUser(ChildUser $v = null)
     {
-        $partial = $this->collTokenAuthsPartial && !$this->isNew();
-        if (null === $this->collTokenAuths || null !== $criteria || $partial) {
-            if ($this->isNew()) {
-                // return empty collection
-                if (null === $this->collTokenAuths) {
-                    $this->initTokenAuths();
-                } else {
-                    $collectionClassName = TokenAuthTableMap::getTableMap()->getCollectionClassName();
-
-                    $collTokenAuths = new $collectionClassName;
-                    $collTokenAuths->setModel('\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth');
-
-                    return $collTokenAuths;
-                }
-            } else {
-                $collTokenAuths = ChildTokenAuthQuery::create(null, $criteria)
-                    ->filterByUser($this)
-                    ->find($con);
-
-                if (null !== $criteria) {
-                    if (false !== $this->collTokenAuthsPartial && count($collTokenAuths)) {
-                        $this->initTokenAuths(false);
-
-                        foreach ($collTokenAuths as $obj) {
-                            if (false == $this->collTokenAuths->contains($obj)) {
-                                $this->collTokenAuths->append($obj);
-                            }
-                        }
-
-                        $this->collTokenAuthsPartial = true;
-                    }
-
-                    return $collTokenAuths;
-                }
-
-                if ($partial && $this->collTokenAuths) {
-                    foreach ($this->collTokenAuths as $obj) {
-                        if ($obj->isNew()) {
-                            $collTokenAuths[] = $obj;
-                        }
-                    }
-                }
-
-                $this->collTokenAuths = $collTokenAuths;
-                $this->collTokenAuthsPartial = false;
-            }
+        if ($v === null) {
+            $this->setUserId(NULL);
+        } else {
+            $this->setUserId($v->getId());
         }
 
-        return $this->collTokenAuths;
-    }
+        $this->aUser = $v;
 
-    /**
-     * Sets a collection of ChildTokenAuth objects related by a one-to-many relationship
-     * to the current object.
-     * It will also schedule objects for deletion based on a diff between old objects (aka persisted)
-     * and new objects from the given Propel collection.
-     *
-     * @param      Collection $tokenAuths A Propel collection.
-     * @param      ConnectionInterface $con Optional connection object
-     * @return $this|ChildUser The current object (for fluent API support)
-     */
-    public function setTokenAuths(Collection $tokenAuths, ConnectionInterface $con = null)
-    {
-        /** @var ChildTokenAuth[] $tokenAuthsToDelete */
-        $tokenAuthsToDelete = $this->getTokenAuths(new Criteria(), $con)->diff($tokenAuths);
-
-
-        $this->tokenAuthsScheduledForDeletion = $tokenAuthsToDelete;
-
-        foreach ($tokenAuthsToDelete as $tokenAuthRemoved) {
-            $tokenAuthRemoved->setUser(null);
+        // Add binding for other direction of this n:n relationship.
+        // If this object has already been added to the ChildUser object, it will not be re-added.
+        if ($v !== null) {
+            $v->addTokenAuth($this);
         }
 
-        $this->collTokenAuths = null;
-        foreach ($tokenAuths as $tokenAuth) {
-            $this->addTokenAuth($tokenAuth);
-        }
-
-        $this->collTokenAuths = $tokenAuths;
-        $this->collTokenAuthsPartial = false;
 
         return $this;
     }
 
+
     /**
-     * Returns the number of related TokenAuth objects.
+     * Get the associated ChildUser object
      *
-     * @param      Criteria $criteria
-     * @param      boolean $distinct
-     * @param      ConnectionInterface $con
-     * @return int             Count of related TokenAuth objects.
+     * @param  ConnectionInterface $con Optional Connection object.
+     * @return ChildUser The associated ChildUser object.
      * @throws PropelException
      */
-    public function countTokenAuths(Criteria $criteria = null, $distinct = false, ConnectionInterface $con = null)
+    public function getUser(ConnectionInterface $con = null)
     {
-        $partial = $this->collTokenAuthsPartial && !$this->isNew();
-        if (null === $this->collTokenAuths || null !== $criteria || $partial) {
-            if ($this->isNew() && null === $this->collTokenAuths) {
-                return 0;
-            }
-
-            if ($partial && !$criteria) {
-                return count($this->getTokenAuths());
-            }
-
-            $query = ChildTokenAuthQuery::create(null, $criteria);
-            if ($distinct) {
-                $query->distinct();
-            }
-
-            return $query
-                ->filterByUser($this)
-                ->count($con);
+        if ($this->aUser === null && ($this->user_id != 0)) {
+            $this->aUser = ChildUserQuery::create()->findPk($this->user_id, $con);
+            /* The following can be used additionally to
+                guarantee the related object contains a reference
+                to this object.  This level of coupling may, however, be
+                undesirable since it could result in an only partially populated collection
+                in the referenced object.
+                $this->aUser->addTokenAuths($this);
+             */
         }
 
-        return count($this->collTokenAuths);
-    }
-
-    /**
-     * Method called to associate a ChildTokenAuth object to this object
-     * through the ChildTokenAuth foreign key attribute.
-     *
-     * @param  ChildTokenAuth $l ChildTokenAuth
-     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\User The current object (for fluent API support)
-     */
-    public function addTokenAuth(ChildTokenAuth $l)
-    {
-        if ($this->collTokenAuths === null) {
-            $this->initTokenAuths();
-            $this->collTokenAuthsPartial = true;
-        }
-
-        if (!$this->collTokenAuths->contains($l)) {
-            $this->doAddTokenAuth($l);
-
-            if ($this->tokenAuthsScheduledForDeletion and $this->tokenAuthsScheduledForDeletion->contains($l)) {
-                $this->tokenAuthsScheduledForDeletion->remove($this->tokenAuthsScheduledForDeletion->search($l));
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param ChildTokenAuth $tokenAuth The ChildTokenAuth object to add.
-     */
-    protected function doAddTokenAuth(ChildTokenAuth $tokenAuth)
-    {
-        $this->collTokenAuths[]= $tokenAuth;
-        $tokenAuth->setUser($this);
-    }
-
-    /**
-     * @param  ChildTokenAuth $tokenAuth The ChildTokenAuth object to remove.
-     * @return $this|ChildUser The current object (for fluent API support)
-     */
-    public function removeTokenAuth(ChildTokenAuth $tokenAuth)
-    {
-        if ($this->getTokenAuths()->contains($tokenAuth)) {
-            $pos = $this->collTokenAuths->search($tokenAuth);
-            $this->collTokenAuths->remove($pos);
-            if (null === $this->tokenAuthsScheduledForDeletion) {
-                $this->tokenAuthsScheduledForDeletion = clone $this->collTokenAuths;
-                $this->tokenAuthsScheduledForDeletion->clear();
-            }
-            $this->tokenAuthsScheduledForDeletion[]= clone $tokenAuth;
-            $tokenAuth->setUser(null);
-        }
-
-        return $this;
+        return $this->aUser;
     }
 
     /**
@@ -1424,12 +1235,16 @@ abstract class User implements ActiveRecordInterface
      */
     public function clear()
     {
+        if (null !== $this->aUser) {
+            $this->aUser->removeTokenAuth($this);
+        }
         $this->id = null;
-        $this->username = null;
-        $this->password = null;
-        $this->email = null;
+        $this->cookie_hash = null;
+        $this->expires = null;
+        $this->user_id = null;
         $this->alreadyInSave = false;
         $this->clearAllReferences();
+        $this->applyDefaultValues();
         $this->resetModified();
         $this->setNew(true);
         $this->setDeleted(false);
@@ -1446,14 +1261,9 @@ abstract class User implements ActiveRecordInterface
     public function clearAllReferences($deep = false)
     {
         if ($deep) {
-            if ($this->collTokenAuths) {
-                foreach ($this->collTokenAuths as $o) {
-                    $o->clearAllReferences($deep);
-                }
-            }
         } // if ($deep)
 
-        $this->collTokenAuths = null;
+        $this->aUser = null;
     }
 
     /**
@@ -1463,7 +1273,7 @@ abstract class User implements ActiveRecordInterface
      */
     public function __toString()
     {
-        return (string) $this->exportTo(UserTableMap::DEFAULT_STRING_FORMAT);
+        return (string) $this->exportTo(TokenAuthTableMap::DEFAULT_STRING_FORMAT);
     }
 
     /**

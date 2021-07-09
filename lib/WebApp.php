@@ -2,9 +2,13 @@
 
 namespace Sbehnfeldt\Webapp;
 
+use Exception;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt;
+use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth;
+use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuthQuery;
+use Sbehnfeldt\Webapp\PropelDbEngine\User;
 use Sbehnfeldt\Webapp\PropelDbEngine\UserQuery;
 use Slim\App;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -89,16 +93,38 @@ class WebApp extends App
     }
 
 
+    /**
+     * Generate a (non-cryptographically secure) random string of a specified length
+     *
+     * @param $length
+     * @return string
+     * @throws Exception
+     */
+    static public function generateToken($length)
+    {
+        $codeAlphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        $codeAlphabet .= "abcdefghijklmnopqrstuvwxyz";
+        $codeAlphabet .= "0123456789";
+        $max = strlen($codeAlphabet);
+
+        $token = "";
+        for ($i = 0; $i < $length; $i++) {
+            $token .= $codeAlphabet[random_int(0, $max - 1)];
+        }
+
+        return $token;
+    }
+
 
     /**
-     * Search "users" table for matching submitted username and password
+     * Authenticate submitted username and password
      *
      * @param string $username
      * @param string $password
      * @return bool
      * @throws \Propel\Runtime\Exception\PropelException
      */
-    public function login(string $username, string $password): bool
+    public function login(string $username, string $password, bool $remember = false): bool
     {
         if (empty($username) || empty($password)) {
             $note = sprintf('Invalid login attempt: missing %s', (empty($username) && empty($password)) ? 'username and password' : (empty($username) ? 'username' : 'password'));
@@ -109,7 +135,7 @@ class WebApp extends App
             $attempt->setNote($note);
             $attempt->save();
             $this->getLogger()->notice($note);
-            throw new \Exception($note);
+            throw new Exception($note);
         }
 
         // Look up user in "users" table
@@ -123,7 +149,7 @@ class WebApp extends App
             $attempt->setNote($note);
             $attempt->save();
             $this->getLogger()->notice($note);
-            throw new \Exception($note);
+            throw new Exception($note);
         }
 
         // Verify the submitted password
@@ -138,10 +164,40 @@ class WebApp extends App
             $attempt->save();
             $this->getLogger()->notice($note);
 
-            throw new \Exception($note);
+            throw new Exception($note);
+        }
+        // User authenticated
+
+        // Clear any current remember-me cookies and records
+        setcookie("user_id", null, time() - 1);
+        setcookie("remember-me", null, time() - 1);
+        $tokens = TokenAuthQuery::create()->findByUserId($user->getId());
+        foreach ($tokens as $token) {
+            try {
+                $token->delete();
+            } catch (Exception $e) {
+                die ($e->getMessage());
+            }
         }
 
-        // User authenticated
+        if ($remember) {
+            // Generate new remember-me cookies and record
+            $expiration = time() + (30 * 24 * 60 * 60);  // for 1 month
+            $random = WebApp::generateToken(32);   // A random string to simulate "password" for remember-me
+            setcookie("user_id", $user->getId(), $expiration);
+            setcookie("remember-me", $random, $expiration);
+
+            $token = new TokenAuth();
+            $token->setUserId($user->getId());
+            $token->setCookieHash(password_hash($random, PASSWORD_DEFAULT));   // Hash the remember-me "password"
+            $token->setExpires(date("Y-m-d H:i:s", $expiration));
+            try {
+                $token->save();
+            } catch (Exception $e) {
+                die($e->getMessage());
+            }
+        }
+
         $attempt = new LoginAttempt();
         $attempt->setUsername($username);
         $attempt->setAttemptedAt(time());
@@ -150,16 +206,30 @@ class WebApp extends App
         $attempt->save();
         $this->getLogger()->info(sprintf( 'User "%s" logged in successfully', $username));
         $_SESSION['user'] = $user;
-
         return true;
     }
 
     public function logout()
     {
         if ( isset($_SESSION[ 'user'])) {
-            $this->getLogger()->info( sprintf( 'User "%s" logged out', $_SESSION[ 'user' ]->getUsername()));
+            /** @var User $user */
+            $user = $_SESSION[ 'user' ];
+
+            // Delete "remember me" cookies when user explicitly logs out
+            $tokens = TokenAuthQuery::create()->findByUserId($user->getId());
+            foreach ($tokens as $token) {
+                try {
+                    $token->delete();
+                } catch ( Exception $e) {
+                    die($e->getMessage());
+                }
+            }
+            $this->getLogger()->info( sprintf( 'User "%s" logged out', $user->getUsername()));
             unset($_SESSION['user']);
         }
+        setcookie("user_id", null, time() - 1);
+        setcookie("remember-me", null, time() - 1);
+        session_destroy();
     }
 
 
@@ -170,8 +240,23 @@ class WebApp extends App
         // Middleware checking whether user is logged in
         $isAuthenticated = function (Request $req, Response $resp, $next) use ($web) {
             if (empty($_SESSION['user'])) {
-                $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_LOGIN, []));
-                return $resp;
+                // Check for "remember me" cookies, validate if found
+                // ref: https://phppot.com/php/secure-remember-me-for-login-using-php-session-and-cookies/
+                if (!empty($_COOKIE['user_id']) && !empty($_COOKIE['remember-me'])) {
+                    $tokens = TokenAuthQuery::create()->filterByUserId($_COOKIE['user_id']);
+                    /** @var TokenAuth $token */
+                    foreach ($tokens as $token) {
+                        if (password_verify($_COOKIE['remember-me'], $token->getCookieHash()) && $token->getExpires() >= date("Y-m-d H:i:s", time())) {
+                            $_SESSION['user'] = UserQuery::create()->findPk($_COOKIE['user_id']);
+                        } else {
+                            $token->delete();
+                        }
+                    }
+                }
+                if (empty($_SESSION['user'])) {
+                    $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_LOGIN, []));
+                    return $resp;
+                }
             }
 
             // User is authenticated
@@ -191,11 +276,11 @@ class WebApp extends App
 
         $this->post('/login', function (Request $req, Response $resp, array $args) use ($web) {
             try {
-                if (!$web->login($_POST['username'], $_POST['password'])) {
-                    throw new \Exception('Unauthorized');
+                if (!$web->login($_POST['username'], $_POST['password'], isset($_POST[ 'remember']))) {
+                    throw new Exception('Unauthorized');
                 }
                 $resp = $resp->withHeader('Location', '/');
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_LOGIN, []));
             }
             return $resp;
