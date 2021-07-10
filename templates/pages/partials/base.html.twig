@@ -12,13 +12,14 @@
 <header>
     <nav>
         <ul class="page-nav">
-            <li><a href="/">Home</a></li>
-            <li><a href="/reports">Reports</a></li>
-            <li><a href="/users">Users</a></li>
-            <li><a href="/security">Security</a></li>
+            {% if 'PAGE_HOME' in perms %}<li><a href="/">Home</a></li>{% endif %}
+            {% if 'PAGE_REPORTS' in perms %}<li><a href="/reports">Reports</a></li>{% endif %}
+            {% if 'PAGE_USERS' in perms  %}<li><a href="/users">Users</a></li>{% endif %}
+            {% if 'PAGE_SECURITY' in perms %}<li><a href="/security">Security</a></li>{% endif %}
+            {% if 'PAGE_ADMIN' in perms %}<li><a href="/admin">Admin</a></li>{% endif %}
         </ul>
         <ul class="profile-nav">
-            <li><a href="/profile">Profile</a></li>
+            {% if 'PAGE_PROFILE' in perms %}<li><a href="/profile">Profile</a></li>{% endif %}
             <li><a href="/logout">Logout</a></li>
         </ul>
     </nav>

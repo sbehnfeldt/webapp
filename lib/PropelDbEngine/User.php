@@ -34,4 +34,13 @@ class User extends BaseUser
 
         return (!$p->isEmpty());
     }
+
+    public function getAllPerms(): array
+    {
+        $p = $this->getUserPermissionsJoinPermission();
+        $arr = $p->toArray();
+        return array_map(function($el) {
+            return $el[ 'Permission'][ 'Slug'];
+        }, $arr);
+    }
 }
