@@ -4,7 +4,7 @@
     <column name="id" phpName="Id" type="INTEGER" primaryKey="true" autoIncrement="true" required="true"/>
     <column name="username" phpName="Username" type="VARCHAR" size="63" required="true" defaultValue=""/>
     <column name="attempted_at" phpName="AttemptedAt" type="TIMESTAMP" required="true" defaultExpr="CURRENT_TIMESTAMP"/>
-    <column name="remember" phpName="Remember" type="BOOLEAN" size="1" required="true" defaultValue="true"/>
+    <column name="remember" phpName="Remember" type="TIMESTAMP" required="true" defaultValue="0000-00-00 00:00:00"/>
     <column name="user_id" phpName="UserId" type="INTEGER" defaultValue="0"/>
     <column name="logout_at" phpName="LogoutAt" type="TIMESTAMP"/>
     <column name="note" phpName="Note" type="VARCHAR" size="255" required="true" defaultValue=""/>

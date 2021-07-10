@@ -14,7 +14,7 @@ CREATE TABLE `login_attempts`
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `username` VARCHAR(63) DEFAULT '' NOT NULL,
     `attempted_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `remember` TINYINT(1) DEFAULT 1 NOT NULL,
+    `remember` DATETIME DEFAULT '0000-00-00 00:00:00' NOT NULL,
     `user_id` INTEGER DEFAULT 0,
     `logout_at` DATETIME,
     `note` VARCHAR(255) DEFAULT '' NOT NULL,

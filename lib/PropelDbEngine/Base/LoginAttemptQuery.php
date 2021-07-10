@@ -62,7 +62,7 @@ use Sbehnfeldt\Webapp\PropelDbEngine\Map\LoginAttemptTableMap;
  * @method     ChildLoginAttempt|null findOneById(int $id) Return the first ChildLoginAttempt filtered by the id column
  * @method     ChildLoginAttempt|null findOneByUsername(string $username) Return the first ChildLoginAttempt filtered by the username column
  * @method     ChildLoginAttempt|null findOneByAttemptedAt(string $attempted_at) Return the first ChildLoginAttempt filtered by the attempted_at column
- * @method     ChildLoginAttempt|null findOneByRemember(boolean $remember) Return the first ChildLoginAttempt filtered by the remember column
+ * @method     ChildLoginAttempt|null findOneByRemember(string $remember) Return the first ChildLoginAttempt filtered by the remember column
  * @method     ChildLoginAttempt|null findOneByUserId(int $user_id) Return the first ChildLoginAttempt filtered by the user_id column
  * @method     ChildLoginAttempt|null findOneByLogoutAt(string $logout_at) Return the first ChildLoginAttempt filtered by the logout_at column
  * @method     ChildLoginAttempt|null findOneByNote(string $note) Return the first ChildLoginAttempt filtered by the note column *
@@ -73,7 +73,7 @@ use Sbehnfeldt\Webapp\PropelDbEngine\Map\LoginAttemptTableMap;
  * @method     ChildLoginAttempt requireOneById(int $id) Return the first ChildLoginAttempt filtered by the id column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
  * @method     ChildLoginAttempt requireOneByUsername(string $username) Return the first ChildLoginAttempt filtered by the username column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
  * @method     ChildLoginAttempt requireOneByAttemptedAt(string $attempted_at) Return the first ChildLoginAttempt filtered by the attempted_at column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
- * @method     ChildLoginAttempt requireOneByRemember(boolean $remember) Return the first ChildLoginAttempt filtered by the remember column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
+ * @method     ChildLoginAttempt requireOneByRemember(string $remember) Return the first ChildLoginAttempt filtered by the remember column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
  * @method     ChildLoginAttempt requireOneByUserId(int $user_id) Return the first ChildLoginAttempt filtered by the user_id column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
  * @method     ChildLoginAttempt requireOneByLogoutAt(string $logout_at) Return the first ChildLoginAttempt filtered by the logout_at column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
  * @method     ChildLoginAttempt requireOneByNote(string $note) Return the first ChildLoginAttempt filtered by the note column and throws \Propel\Runtime\Exception\EntityNotFoundException when not found
@@ -82,7 +82,7 @@ use Sbehnfeldt\Webapp\PropelDbEngine\Map\LoginAttemptTableMap;
  * @method     ChildLoginAttempt[]|ObjectCollection findById(int $id) Return ChildLoginAttempt objects filtered by the id column
  * @method     ChildLoginAttempt[]|ObjectCollection findByUsername(string $username) Return ChildLoginAttempt objects filtered by the username column
  * @method     ChildLoginAttempt[]|ObjectCollection findByAttemptedAt(string $attempted_at) Return ChildLoginAttempt objects filtered by the attempted_at column
- * @method     ChildLoginAttempt[]|ObjectCollection findByRemember(boolean $remember) Return ChildLoginAttempt objects filtered by the remember column
+ * @method     ChildLoginAttempt[]|ObjectCollection findByRemember(string $remember) Return ChildLoginAttempt objects filtered by the remember column
  * @method     ChildLoginAttempt[]|ObjectCollection findByUserId(int $user_id) Return ChildLoginAttempt objects filtered by the user_id column
  * @method     ChildLoginAttempt[]|ObjectCollection findByLogoutAt(string $logout_at) Return ChildLoginAttempt objects filtered by the logout_at column
  * @method     ChildLoginAttempt[]|ObjectCollection findByNote(string $note) Return ChildLoginAttempt objects filtered by the note column
@@ -388,23 +388,39 @@ abstract class LoginAttemptQuery extends ModelCriteria
      *
      * Example usage:
      * <code>
-     * $query->filterByRemember(true); // WHERE remember = true
-     * $query->filterByRemember('yes'); // WHERE remember = true
+     * $query->filterByRemember('2011-03-14'); // WHERE remember = '2011-03-14'
+     * $query->filterByRemember('now'); // WHERE remember = '2011-03-14'
+     * $query->filterByRemember(array('max' => 'yesterday')); // WHERE remember > '2011-03-13'
      * </code>
      *
-     * @param     boolean|string $remember The value to use as filter.
-     *              Non-boolean arguments are converted using the following rules:
-     *                * 1, '1', 'true',  'on',  and 'yes' are converted to boolean true
-     *                * 0, '0', 'false', 'off', and 'no'  are converted to boolean false
-     *              Check on string values is case insensitive (so 'FaLsE' is seen as 'false').
+     * @param     mixed $remember The value to use as filter.
+     *              Values can be integers (unix timestamps), DateTime objects, or strings.
+     *              Empty strings are treated as NULL.
+     *              Use scalar values for equality.
+     *              Use array values for in_array() equivalent.
+     *              Use associative array('min' => $minValue, 'max' => $maxValue) for intervals.
      * @param     string $comparison Operator to use for the column comparison, defaults to Criteria::EQUAL
      *
      * @return $this|ChildLoginAttemptQuery The current query, for fluid interface
      */
     public function filterByRemember($remember = null, $comparison = null)
     {
-        if (is_string($remember)) {
-            $remember = in_array(strtolower($remember), array('false', 'off', '-', 'no', 'n', '0', '')) ? false : true;
+        if (is_array($remember)) {
+            $useMinMax = false;
+            if (isset($remember['min'])) {
+                $this->addUsingAlias(LoginAttemptTableMap::COL_REMEMBER, $remember['min'], Criteria::GREATER_EQUAL);
+                $useMinMax = true;
+            }
+            if (isset($remember['max'])) {
+                $this->addUsingAlias(LoginAttemptTableMap::COL_REMEMBER, $remember['max'], Criteria::LESS_EQUAL);
+                $useMinMax = true;
+            }
+            if ($useMinMax) {
+                return $this;
+            }
+            if (null === $comparison) {
+                $comparison = Criteria::IN;
+            }
         }
 
         return $this->addUsingAlias(LoginAttemptTableMap::COL_REMEMBER, $remember, $comparison);

@@ -89,8 +89,8 @@ abstract class LoginAttempt implements ActiveRecordInterface
     /**
      * The value for the remember field.
      *
-     * Note: this column has a database default value of: true
-     * @var        boolean
+     * Note: this column has a database default value of: NULL
+     * @var        DateTime
      */
     protected $remember;
 
@@ -139,7 +139,7 @@ abstract class LoginAttempt implements ActiveRecordInterface
     public function applyDefaultValues()
     {
         $this->username = '';
-        $this->remember = true;
+        $this->remember = PropelDateTime::newInstance(NULL, null, 'DateTime');
         $this->user_id = 0;
         $this->note = '';
     }
@@ -413,23 +413,25 @@ abstract class LoginAttempt implements ActiveRecordInterface
     }
 
     /**
-     * Get the [remember] column value.
+     * Get the [optionally formatted] temporal [remember] column value.
      *
-     * @return boolean
-     */
-    public function getRemember()
-    {
-        return $this->remember;
-    }
-
-    /**
-     * Get the [remember] column value.
      *
-     * @return boolean
+     * @param string|null $format The date/time format string (either date()-style or strftime()-style).
+     *   If format is NULL, then the raw DateTime object will be returned.
+     *
+     * @return string|DateTime Formatted date/time value as string or DateTime object (if format is NULL), NULL if column is NULL, and 0 if column value is 0000-00-00 00:00:00
+     *
+     * @throws PropelException - if unable to parse/validate the date/time value.
+     *
+     * @psalm-return ($format is null ? DateTime : string)
      */
-    public function isRemember()
+    public function getRemember($format = null)
     {
-        return $this->getRemember();
+        if ($format === null) {
+            return $this->remember;
+        } else {
+            return $this->remember instanceof \DateTimeInterface ? $this->remember->format($format) : null;
+        }
     }
 
     /**
@@ -535,29 +537,23 @@ abstract class LoginAttempt implements ActiveRecordInterface
     } // setAttemptedAt()
 
     /**
-     * Sets the value of the [remember] column.
-     * Non-boolean arguments are converted using the following rules:
-     *   * 1, '1', 'true',  'on',  and 'yes' are converted to boolean true
-     *   * 0, '0', 'false', 'off', and 'no'  are converted to boolean false
-     * Check on string values is case insensitive (so 'FaLsE' is seen as 'false').
+     * Sets the value of [remember] column to a normalized version of the date/time value specified.
      *
-     * @param  boolean|integer|string $v The new value
+     * @param  string|integer|\DateTimeInterface $v string, integer (timestamp), or \DateTimeInterface value.
+     *               Empty strings are treated as NULL.
      * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt The current object (for fluent API support)
      */
     public function setRemember($v)
     {
-        if ($v !== null) {
-            if (is_string($v)) {
-                $v = in_array(strtolower($v), array('false', 'off', '-', 'no', 'n', '0', '')) ? false : true;
-            } else {
-                $v = (boolean) $v;
+        $dt = PropelDateTime::newInstance($v, null, 'DateTime');
+        if ($this->remember !== null || $dt !== null) {
+            if ( ($dt != $this->remember) // normalized values don't match
+                || ($dt->format('Y-m-d H:i:s.u') === NULL) // or the entered value matches the default
+                 ) {
+                $this->remember = $dt === null ? null : clone $dt;
+                $this->modifiedColumns[LoginAttemptTableMap::COL_REMEMBER] = true;
             }
-        }
-
-        if ($this->remember !== $v) {
-            $this->remember = $v;
-            $this->modifiedColumns[LoginAttemptTableMap::COL_REMEMBER] = true;
-        }
+        } // if either are not null
 
         return $this;
     } // setRemember()
@@ -640,7 +636,7 @@ abstract class LoginAttempt implements ActiveRecordInterface
                 return false;
             }
 
-            if ($this->remember !== true) {
+            if ($this->remember && $this->remember->format('Y-m-d H:i:s.u') !== NULL) {
                 return false;
             }
 
@@ -691,7 +687,10 @@ abstract class LoginAttempt implements ActiveRecordInterface
             $this->attempted_at = (null !== $col) ? PropelDateTime::newInstance($col, null, 'DateTime') : null;
 
             $col = $row[TableMap::TYPE_NUM == $indexType ? 3 + $startcol : LoginAttemptTableMap::translateFieldName('Remember', TableMap::TYPE_PHPNAME, $indexType)];
-            $this->remember = (null !== $col) ? (boolean) $col : null;
+            if ($col === '0000-00-00 00:00:00') {
+                $col = null;
+            }
+            $this->remember = (null !== $col) ? PropelDateTime::newInstance($col, null, 'DateTime') : null;
 
             $col = $row[TableMap::TYPE_NUM == $indexType ? 4 + $startcol : LoginAttemptTableMap::translateFieldName('UserId', TableMap::TYPE_PHPNAME, $indexType)];
             $this->user_id = (null !== $col) ? (int) $col : null;
@@ -971,7 +970,7 @@ abstract class LoginAttempt implements ActiveRecordInterface
                         $stmt->bindValue($identifier, $this->attempted_at ? $this->attempted_at->format("Y-m-d H:i:s.u") : null, PDO::PARAM_STR);
                         break;
                     case 'remember':
-                        $stmt->bindValue($identifier, (int) $this->remember, PDO::PARAM_INT);
+                        $stmt->bindValue($identifier, $this->remember ? $this->remember->format("Y-m-d H:i:s.u") : null, PDO::PARAM_STR);
                         break;
                     case 'user_id':
                         $stmt->bindValue($identifier, $this->user_id, PDO::PARAM_INT);
@@ -1105,6 +1104,10 @@ abstract class LoginAttempt implements ActiveRecordInterface
         );
         if ($result[$keys[2]] instanceof \DateTimeInterface) {
             $result[$keys[2]] = $result[$keys[2]]->format('Y-m-d H:i:s.u');
+        }
+
+        if ($result[$keys[3]] instanceof \DateTimeInterface) {
+            $result[$keys[3]] = $result[$keys[3]]->format('Y-m-d H:i:s.u');
         }
 
         if ($result[$keys[5]] instanceof \DateTimeInterface) {

@@ -5,7 +5,9 @@ namespace Sbehnfeldt\Webapp;
 use Exception;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Propel\Runtime\ActiveQuery\Criteria;
 use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt;
+use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttemptQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth;
 use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuthQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\User;
@@ -215,9 +217,10 @@ class WebApp extends App
             }
         }
 
+        $now = time();
         if ($remember) {
             // Generate new remember-me cookies and record
-            $expiration = time() + $this->getRememberMeDuration();
+            $expiration = $now + $this->getRememberMeDuration();
             $random = WebApp::generateToken(32);   // A random string to simulate "password" for remember-me
             setcookie("user_id", $user->getId(), $expiration);
             setcookie("remember-me", $random, $expiration);
@@ -231,13 +234,15 @@ class WebApp extends App
             } catch (Exception $e) {
                 die($e->getMessage());
             }
+        } else {
+            $expiration = $now - 1;
         }
 
         $note = sprintf('User "%s" logged in successfully', $username);
         $attempt = new LoginAttempt();
         $attempt->setUsername($username);
-        $attempt->setAttemptedAt(time());
-        $attempt->setRemember($remember);
+        $attempt->setAttemptedAt($now);
+        $attempt->setRemember($expiration);
         $attempt->setUserId($user->getId());
         $attempt->setNote($note);
         $attempt->save();
@@ -261,6 +266,9 @@ class WebApp extends App
                     die($e->getMessage());
                 }
             }
+            $loginAttempt = LoginAttemptQuery::create()->filterByUserId($user->getId())->orderByAttemptedAt(Criteria::DESC)->findOne();
+            $loginAttempt->setLogoutAt(time());
+            $loginAttempt->save();
             $this->getLogger()->info(sprintf('User "%s" logged out', $user->getUsername()));
             unset($_SESSION['user']);
         }

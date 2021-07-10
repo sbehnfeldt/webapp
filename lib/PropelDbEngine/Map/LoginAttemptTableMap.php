@@ -218,7 +218,7 @@ class LoginAttemptTableMap extends TableMap
         $this->addPrimaryKey('id', 'Id', 'INTEGER', true, null, null);
         $this->addColumn('username', 'Username', 'VARCHAR', true, 63, '');
         $this->addColumn('attempted_at', 'AttemptedAt', 'TIMESTAMP', true, null, 'CURRENT_TIMESTAMP');
-        $this->addColumn('remember', 'Remember', 'BOOLEAN', true, 1, true);
+        $this->addColumn('remember', 'Remember', 'TIMESTAMP', true, null, '0000-00-00 00:00:00');
         $this->addForeignKey('user_id', 'UserId', 'INTEGER', 'users', 'id', false, null, 0);
         $this->addColumn('logout_at', 'LogoutAt', 'TIMESTAMP', false, null, null);
         $this->addColumn('note', 'Note', 'VARCHAR', true, 255, '');
