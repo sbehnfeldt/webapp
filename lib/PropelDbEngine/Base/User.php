@@ -16,10 +16,13 @@ use Propel\Runtime\Exception\LogicException;
 use Propel\Runtime\Exception\PropelException;
 use Propel\Runtime\Map\TableMap;
 use Propel\Runtime\Parser\AbstractParser;
+use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt as ChildLoginAttempt;
+use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttemptQuery as ChildLoginAttemptQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth as ChildTokenAuth;
 use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuthQuery as ChildTokenAuthQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\User as ChildUser;
 use Sbehnfeldt\Webapp\PropelDbEngine\UserQuery as ChildUserQuery;
+use Sbehnfeldt\Webapp\PropelDbEngine\Map\LoginAttemptTableMap;
 use Sbehnfeldt\Webapp\PropelDbEngine\Map\TokenAuthTableMap;
 use Sbehnfeldt\Webapp\PropelDbEngine\Map\UserTableMap;
 
@@ -93,6 +96,12 @@ abstract class User implements ActiveRecordInterface
     protected $email;
 
     /**
+     * @var        ObjectCollection|ChildLoginAttempt[] Collection to store aggregation of ChildLoginAttempt objects.
+     */
+    protected $collLoginAttempts;
+    protected $collLoginAttemptsPartial;
+
+    /**
      * @var        ObjectCollection|ChildTokenAuth[] Collection to store aggregation of ChildTokenAuth objects.
      */
     protected $collTokenAuths;
@@ -105,6 +114,12 @@ abstract class User implements ActiveRecordInterface
      * @var boolean
      */
     protected $alreadyInSave = false;
+
+    /**
+     * An array of objects scheduled for deletion.
+     * @var ObjectCollection|ChildLoginAttempt[]
+     */
+    protected $loginAttemptsScheduledForDeletion = null;
 
     /**
      * An array of objects scheduled for deletion.
@@ -572,6 +587,8 @@ abstract class User implements ActiveRecordInterface
 
         if ($deep) {  // also de-associate any related objects?
 
+            $this->collLoginAttempts = null;
+
             $this->collTokenAuths = null;
 
         } // if (deep)
@@ -686,6 +703,24 @@ abstract class User implements ActiveRecordInterface
                     $affectedRows += $this->doUpdate($con);
                 }
                 $this->resetModified();
+            }
+
+            if ($this->loginAttemptsScheduledForDeletion !== null) {
+                if (!$this->loginAttemptsScheduledForDeletion->isEmpty()) {
+                    foreach ($this->loginAttemptsScheduledForDeletion as $loginAttempt) {
+                        // need to save related object because we set the relation to null
+                        $loginAttempt->save($con);
+                    }
+                    $this->loginAttemptsScheduledForDeletion = null;
+                }
+            }
+
+            if ($this->collLoginAttempts !== null) {
+                foreach ($this->collLoginAttempts as $referrerFK) {
+                    if (!$referrerFK->isDeleted() && ($referrerFK->isNew() || $referrerFK->isModified())) {
+                        $affectedRows += $referrerFK->save($con);
+                    }
+                }
             }
 
             if ($this->tokenAuthsScheduledForDeletion !== null) {
@@ -881,6 +916,21 @@ abstract class User implements ActiveRecordInterface
         }
 
         if ($includeForeignObjects) {
+            if (null !== $this->collLoginAttempts) {
+
+                switch ($keyType) {
+                    case TableMap::TYPE_CAMELNAME:
+                        $key = 'loginAttempts';
+                        break;
+                    case TableMap::TYPE_FIELDNAME:
+                        $key = 'login_attemptss';
+                        break;
+                    default:
+                        $key = 'LoginAttempts';
+                }
+
+                $result[$key] = $this->collLoginAttempts->toArray(null, false, $keyType, $includeLazyLoadColumns, $alreadyDumpedObjects);
+            }
             if (null !== $this->collTokenAuths) {
 
                 switch ($keyType) {
@@ -1130,6 +1180,12 @@ abstract class User implements ActiveRecordInterface
             // the getter/setter methods for fkey referrer objects.
             $copyObj->setNew(false);
 
+            foreach ($this->getLoginAttempts() as $relObj) {
+                if ($relObj !== $this) {  // ensure that we don't try to copy a reference to ourselves
+                    $copyObj->addLoginAttempt($relObj->copy($deepCopy));
+                }
+            }
+
             foreach ($this->getTokenAuths() as $relObj) {
                 if ($relObj !== $this) {  // ensure that we don't try to copy a reference to ourselves
                     $copyObj->addTokenAuth($relObj->copy($deepCopy));
@@ -1177,10 +1233,248 @@ abstract class User implements ActiveRecordInterface
      */
     public function initRelation($relationName)
     {
+        if ('LoginAttempt' === $relationName) {
+            $this->initLoginAttempts();
+            return;
+        }
         if ('TokenAuth' === $relationName) {
             $this->initTokenAuths();
             return;
         }
+    }
+
+    /**
+     * Clears out the collLoginAttempts collection
+     *
+     * This does not modify the database; however, it will remove any associated objects, causing
+     * them to be refetched by subsequent calls to accessor method.
+     *
+     * @return void
+     * @see        addLoginAttempts()
+     */
+    public function clearLoginAttempts()
+    {
+        $this->collLoginAttempts = null; // important to set this to NULL since that means it is uninitialized
+    }
+
+    /**
+     * Reset is the collLoginAttempts collection loaded partially.
+     */
+    public function resetPartialLoginAttempts($v = true)
+    {
+        $this->collLoginAttemptsPartial = $v;
+    }
+
+    /**
+     * Initializes the collLoginAttempts collection.
+     *
+     * By default this just sets the collLoginAttempts collection to an empty array (like clearcollLoginAttempts());
+     * however, you may wish to override this method in your stub class to provide setting appropriate
+     * to your application -- for example, setting the initial array to the values stored in database.
+     *
+     * @param      boolean $overrideExisting If set to true, the method call initializes
+     *                                        the collection even if it is not empty
+     *
+     * @return void
+     */
+    public function initLoginAttempts($overrideExisting = true)
+    {
+        if (null !== $this->collLoginAttempts && !$overrideExisting) {
+            return;
+        }
+
+        $collectionClassName = LoginAttemptTableMap::getTableMap()->getCollectionClassName();
+
+        $this->collLoginAttempts = new $collectionClassName;
+        $this->collLoginAttempts->setModel('\Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt');
+    }
+
+    /**
+     * Gets an array of ChildLoginAttempt objects which contain a foreign key that references this object.
+     *
+     * If the $criteria is not null, it is used to always fetch the results from the database.
+     * Otherwise the results are fetched from the database the first time, then cached.
+     * Next time the same method is called without $criteria, the cached collection is returned.
+     * If this ChildUser is new, it will return
+     * an empty collection or the current collection; the criteria is ignored on a new object.
+     *
+     * @param      Criteria $criteria optional Criteria object to narrow the query
+     * @param      ConnectionInterface $con optional connection object
+     * @return ObjectCollection|ChildLoginAttempt[] List of ChildLoginAttempt objects
+     * @throws PropelException
+     */
+    public function getLoginAttempts(Criteria $criteria = null, ConnectionInterface $con = null)
+    {
+        $partial = $this->collLoginAttemptsPartial && !$this->isNew();
+        if (null === $this->collLoginAttempts || null !== $criteria || $partial) {
+            if ($this->isNew()) {
+                // return empty collection
+                if (null === $this->collLoginAttempts) {
+                    $this->initLoginAttempts();
+                } else {
+                    $collectionClassName = LoginAttemptTableMap::getTableMap()->getCollectionClassName();
+
+                    $collLoginAttempts = new $collectionClassName;
+                    $collLoginAttempts->setModel('\Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt');
+
+                    return $collLoginAttempts;
+                }
+            } else {
+                $collLoginAttempts = ChildLoginAttemptQuery::create(null, $criteria)
+                    ->filterByUser($this)
+                    ->find($con);
+
+                if (null !== $criteria) {
+                    if (false !== $this->collLoginAttemptsPartial && count($collLoginAttempts)) {
+                        $this->initLoginAttempts(false);
+
+                        foreach ($collLoginAttempts as $obj) {
+                            if (false == $this->collLoginAttempts->contains($obj)) {
+                                $this->collLoginAttempts->append($obj);
+                            }
+                        }
+
+                        $this->collLoginAttemptsPartial = true;
+                    }
+
+                    return $collLoginAttempts;
+                }
+
+                if ($partial && $this->collLoginAttempts) {
+                    foreach ($this->collLoginAttempts as $obj) {
+                        if ($obj->isNew()) {
+                            $collLoginAttempts[] = $obj;
+                        }
+                    }
+                }
+
+                $this->collLoginAttempts = $collLoginAttempts;
+                $this->collLoginAttemptsPartial = false;
+            }
+        }
+
+        return $this->collLoginAttempts;
+    }
+
+    /**
+     * Sets a collection of ChildLoginAttempt objects related by a one-to-many relationship
+     * to the current object.
+     * It will also schedule objects for deletion based on a diff between old objects (aka persisted)
+     * and new objects from the given Propel collection.
+     *
+     * @param      Collection $loginAttempts A Propel collection.
+     * @param      ConnectionInterface $con Optional connection object
+     * @return $this|ChildUser The current object (for fluent API support)
+     */
+    public function setLoginAttempts(Collection $loginAttempts, ConnectionInterface $con = null)
+    {
+        /** @var ChildLoginAttempt[] $loginAttemptsToDelete */
+        $loginAttemptsToDelete = $this->getLoginAttempts(new Criteria(), $con)->diff($loginAttempts);
+
+
+        $this->loginAttemptsScheduledForDeletion = $loginAttemptsToDelete;
+
+        foreach ($loginAttemptsToDelete as $loginAttemptRemoved) {
+            $loginAttemptRemoved->setUser(null);
+        }
+
+        $this->collLoginAttempts = null;
+        foreach ($loginAttempts as $loginAttempt) {
+            $this->addLoginAttempt($loginAttempt);
+        }
+
+        $this->collLoginAttempts = $loginAttempts;
+        $this->collLoginAttemptsPartial = false;
+
+        return $this;
+    }
+
+    /**
+     * Returns the number of related LoginAttempt objects.
+     *
+     * @param      Criteria $criteria
+     * @param      boolean $distinct
+     * @param      ConnectionInterface $con
+     * @return int             Count of related LoginAttempt objects.
+     * @throws PropelException
+     */
+    public function countLoginAttempts(Criteria $criteria = null, $distinct = false, ConnectionInterface $con = null)
+    {
+        $partial = $this->collLoginAttemptsPartial && !$this->isNew();
+        if (null === $this->collLoginAttempts || null !== $criteria || $partial) {
+            if ($this->isNew() && null === $this->collLoginAttempts) {
+                return 0;
+            }
+
+            if ($partial && !$criteria) {
+                return count($this->getLoginAttempts());
+            }
+
+            $query = ChildLoginAttemptQuery::create(null, $criteria);
+            if ($distinct) {
+                $query->distinct();
+            }
+
+            return $query
+                ->filterByUser($this)
+                ->count($con);
+        }
+
+        return count($this->collLoginAttempts);
+    }
+
+    /**
+     * Method called to associate a ChildLoginAttempt object to this object
+     * through the ChildLoginAttempt foreign key attribute.
+     *
+     * @param  ChildLoginAttempt $l ChildLoginAttempt
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\User The current object (for fluent API support)
+     */
+    public function addLoginAttempt(ChildLoginAttempt $l)
+    {
+        if ($this->collLoginAttempts === null) {
+            $this->initLoginAttempts();
+            $this->collLoginAttemptsPartial = true;
+        }
+
+        if (!$this->collLoginAttempts->contains($l)) {
+            $this->doAddLoginAttempt($l);
+
+            if ($this->loginAttemptsScheduledForDeletion and $this->loginAttemptsScheduledForDeletion->contains($l)) {
+                $this->loginAttemptsScheduledForDeletion->remove($this->loginAttemptsScheduledForDeletion->search($l));
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param ChildLoginAttempt $loginAttempt The ChildLoginAttempt object to add.
+     */
+    protected function doAddLoginAttempt(ChildLoginAttempt $loginAttempt)
+    {
+        $this->collLoginAttempts[]= $loginAttempt;
+        $loginAttempt->setUser($this);
+    }
+
+    /**
+     * @param  ChildLoginAttempt $loginAttempt The ChildLoginAttempt object to remove.
+     * @return $this|ChildUser The current object (for fluent API support)
+     */
+    public function removeLoginAttempt(ChildLoginAttempt $loginAttempt)
+    {
+        if ($this->getLoginAttempts()->contains($loginAttempt)) {
+            $pos = $this->collLoginAttempts->search($loginAttempt);
+            $this->collLoginAttempts->remove($pos);
+            if (null === $this->loginAttemptsScheduledForDeletion) {
+                $this->loginAttemptsScheduledForDeletion = clone $this->collLoginAttempts;
+                $this->loginAttemptsScheduledForDeletion->clear();
+            }
+            $this->loginAttemptsScheduledForDeletion[]= $loginAttempt;
+            $loginAttempt->setUser(null);
+        }
+
+        return $this;
     }
 
     /**
@@ -1446,6 +1740,11 @@ abstract class User implements ActiveRecordInterface
     public function clearAllReferences($deep = false)
     {
         if ($deep) {
+            if ($this->collLoginAttempts) {
+                foreach ($this->collLoginAttempts as $o) {
+                    $o->clearAllReferences($deep);
+                }
+            }
             if ($this->collTokenAuths) {
                 foreach ($this->collTokenAuths as $o) {
                     $o->clearAllReferences($deep);
@@ -1453,6 +1752,7 @@ abstract class User implements ActiveRecordInterface
             }
         } // if ($deep)
 
+        $this->collLoginAttempts = null;
         $this->collTokenAuths = null;
     }
 

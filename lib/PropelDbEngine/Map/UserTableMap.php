@@ -187,6 +187,13 @@ class UserTableMap extends TableMap
      */
     public function buildRelations()
     {
+        $this->addRelation('LoginAttempt', '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\LoginAttempt', RelationMap::ONE_TO_MANY, array (
+  0 =>
+  array (
+    0 => ':user_id',
+    1 => ':id',
+  ),
+), null, 'NO ACTION', 'LoginAttempts', false);
         $this->addRelation('TokenAuth', '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\TokenAuth', RelationMap::ONE_TO_MANY, array (
   0 =>
   array (

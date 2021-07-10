@@ -12,11 +12,19 @@ DROP TABLE IF EXISTS `login_attempts`;
 CREATE TABLE `login_attempts`
 (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `username` VARCHAR(63) DEFAULT '' NOT NULL,
     `attempted_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `username` VARCHAR(63) NOT NULL,
-    `pass` TINYINT(1) NOT NULL,
-    `note` VARCHAR(255) NOT NULL,
-    PRIMARY KEY (`id`)
+    `remember` TINYINT(1) DEFAULT 1 NOT NULL,
+    `user_id` INTEGER DEFAULT 0,
+    `logout_at` DATETIME,
+    `note` VARCHAR(255) DEFAULT '' NOT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `username` (`username`),
+    INDEX `user_id` (`user_id`),
+    CONSTRAINT `login_attempts_ibfk_1`
+        FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`)
+        ON UPDATE NO ACTION
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------

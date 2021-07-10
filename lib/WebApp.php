@@ -131,7 +131,8 @@ class WebApp extends App
             $attempt = new LoginAttempt();
             $attempt->setUsername('');
             $attempt->setAttemptedAt(time());
-            $attempt->setPass(0);
+            $attempt->setRemember($remember);
+            $attempt->setUserId(null);
             $attempt->setNote($note);
             $attempt->save();
             $this->getLogger()->notice($note);
@@ -145,7 +146,8 @@ class WebApp extends App
             $attempt = new LoginAttempt();
             $attempt->setUsername($username);
             $attempt->setAttemptedAt(time());
-            $attempt->setPass(0);
+            $attempt->setRemember($remember);
+            $attempt->setUserId(null);
             $attempt->setNote($note);
             $attempt->save();
             $this->getLogger()->notice($note);
@@ -159,7 +161,8 @@ class WebApp extends App
             $attempt = new LoginAttempt();
             $attempt->setUsername($username);
             $attempt->setAttemptedAt(time());
-            $attempt->setPass(0);
+            $attempt->setRemember($remember);
+            $attempt->setUserId($user->getId());
             $attempt->setNote($note);
             $attempt->save();
             $this->getLogger()->notice($note);
@@ -198,13 +201,15 @@ class WebApp extends App
             }
         }
 
+        $note = sprintf( 'User "%s" logged in successfully', $username);
         $attempt = new LoginAttempt();
         $attempt->setUsername($username);
         $attempt->setAttemptedAt(time());
-        $attempt->setPass(1);
-        $attempt->setNote('OK');
+        $attempt->setRemember($remember);
+        $attempt->setUserId($user->getId());
+        $attempt->setNote($note);
         $attempt->save();
-        $this->getLogger()->info(sprintf( 'User "%s" logged in successfully', $username));
+        $this->getLogger()->info($note);
         $_SESSION['user'] = $user;
         return true;
     }
@@ -288,6 +293,15 @@ class WebApp extends App
 
         $this->get('/logout', function (Request $req, Response $resp, array $args) use ($web) {
             $web->logout();
+            $resp = $resp->withHeader('Location', '/');
+            return $resp;
+        });
+        $this->get('/user', function (Request $req, Response $resp, array $args) use ($web) {
+            $user = new User();
+            $user->setUsername('stephen');
+            $user->setPassword(password_hash('stephen', PASSWORD_DEFAULT));
+            $user->setEmail('stephen@behnfeldt.pro');
+            $user->save();
             $resp = $resp->withHeader('Location', '/');
             return $resp;
         });

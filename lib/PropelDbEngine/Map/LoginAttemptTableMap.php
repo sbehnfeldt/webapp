@@ -58,7 +58,7 @@ class LoginAttemptTableMap extends TableMap
     /**
      * The total number of columns
      */
-    const NUM_COLUMNS = 5;
+    const NUM_COLUMNS = 7;
 
     /**
      * The number of lazy-loaded columns
@@ -68,7 +68,7 @@ class LoginAttemptTableMap extends TableMap
     /**
      * The number of columns to hydrate (NUM_COLUMNS - NUM_LAZY_LOAD_COLUMNS)
      */
-    const NUM_HYDRATE_COLUMNS = 5;
+    const NUM_HYDRATE_COLUMNS = 7;
 
     /**
      * the column name for the id field
@@ -76,19 +76,29 @@ class LoginAttemptTableMap extends TableMap
     const COL_ID = 'login_attempts.id';
 
     /**
-     * the column name for the attempted_at field
-     */
-    const COL_ATTEMPTED_AT = 'login_attempts.attempted_at';
-
-    /**
      * the column name for the username field
      */
     const COL_USERNAME = 'login_attempts.username';
 
     /**
-     * the column name for the pass field
+     * the column name for the attempted_at field
      */
-    const COL_PASS = 'login_attempts.pass';
+    const COL_ATTEMPTED_AT = 'login_attempts.attempted_at';
+
+    /**
+     * the column name for the remember field
+     */
+    const COL_REMEMBER = 'login_attempts.remember';
+
+    /**
+     * the column name for the user_id field
+     */
+    const COL_USER_ID = 'login_attempts.user_id';
+
+    /**
+     * the column name for the logout_at field
+     */
+    const COL_LOGOUT_AT = 'login_attempts.logout_at';
 
     /**
      * the column name for the note field
@@ -107,11 +117,11 @@ class LoginAttemptTableMap extends TableMap
      * e.g. self::$fieldNames[self::TYPE_PHPNAME][0] = 'Id'
      */
     protected static $fieldNames = array (
-        self::TYPE_PHPNAME       => array('Id', 'AttemptedAt', 'Username', 'Pass', 'Note', ),
-        self::TYPE_CAMELNAME     => array('id', 'attemptedAt', 'username', 'pass', 'note', ),
-        self::TYPE_COLNAME       => array(LoginAttemptTableMap::COL_ID, LoginAttemptTableMap::COL_ATTEMPTED_AT, LoginAttemptTableMap::COL_USERNAME, LoginAttemptTableMap::COL_PASS, LoginAttemptTableMap::COL_NOTE, ),
-        self::TYPE_FIELDNAME     => array('id', 'attempted_at', 'username', 'pass', 'note', ),
-        self::TYPE_NUM           => array(0, 1, 2, 3, 4, )
+        self::TYPE_PHPNAME       => array('Id', 'Username', 'AttemptedAt', 'Remember', 'UserId', 'LogoutAt', 'Note', ),
+        self::TYPE_CAMELNAME     => array('id', 'username', 'attemptedAt', 'remember', 'userId', 'logoutAt', 'note', ),
+        self::TYPE_COLNAME       => array(LoginAttemptTableMap::COL_ID, LoginAttemptTableMap::COL_USERNAME, LoginAttemptTableMap::COL_ATTEMPTED_AT, LoginAttemptTableMap::COL_REMEMBER, LoginAttemptTableMap::COL_USER_ID, LoginAttemptTableMap::COL_LOGOUT_AT, LoginAttemptTableMap::COL_NOTE, ),
+        self::TYPE_FIELDNAME     => array('id', 'username', 'attempted_at', 'remember', 'user_id', 'logout_at', 'note', ),
+        self::TYPE_NUM           => array(0, 1, 2, 3, 4, 5, 6, )
     );
 
     /**
@@ -121,11 +131,11 @@ class LoginAttemptTableMap extends TableMap
      * e.g. self::$fieldKeys[self::TYPE_PHPNAME]['Id'] = 0
      */
     protected static $fieldKeys = array (
-        self::TYPE_PHPNAME       => array('Id' => 0, 'AttemptedAt' => 1, 'Username' => 2, 'Pass' => 3, 'Note' => 4, ),
-        self::TYPE_CAMELNAME     => array('id' => 0, 'attemptedAt' => 1, 'username' => 2, 'pass' => 3, 'note' => 4, ),
-        self::TYPE_COLNAME       => array(LoginAttemptTableMap::COL_ID => 0, LoginAttemptTableMap::COL_ATTEMPTED_AT => 1, LoginAttemptTableMap::COL_USERNAME => 2, LoginAttemptTableMap::COL_PASS => 3, LoginAttemptTableMap::COL_NOTE => 4, ),
-        self::TYPE_FIELDNAME     => array('id' => 0, 'attempted_at' => 1, 'username' => 2, 'pass' => 3, 'note' => 4, ),
-        self::TYPE_NUM           => array(0, 1, 2, 3, 4, )
+        self::TYPE_PHPNAME       => array('Id' => 0, 'Username' => 1, 'AttemptedAt' => 2, 'Remember' => 3, 'UserId' => 4, 'LogoutAt' => 5, 'Note' => 6, ),
+        self::TYPE_CAMELNAME     => array('id' => 0, 'username' => 1, 'attemptedAt' => 2, 'remember' => 3, 'userId' => 4, 'logoutAt' => 5, 'note' => 6, ),
+        self::TYPE_COLNAME       => array(LoginAttemptTableMap::COL_ID => 0, LoginAttemptTableMap::COL_USERNAME => 1, LoginAttemptTableMap::COL_ATTEMPTED_AT => 2, LoginAttemptTableMap::COL_REMEMBER => 3, LoginAttemptTableMap::COL_USER_ID => 4, LoginAttemptTableMap::COL_LOGOUT_AT => 5, LoginAttemptTableMap::COL_NOTE => 6, ),
+        self::TYPE_FIELDNAME     => array('id' => 0, 'username' => 1, 'attempted_at' => 2, 'remember' => 3, 'user_id' => 4, 'logout_at' => 5, 'note' => 6, ),
+        self::TYPE_NUM           => array(0, 1, 2, 3, 4, 5, 6, )
     );
 
     /**
@@ -141,6 +151,13 @@ class LoginAttemptTableMap extends TableMap
         'LoginAttemptTableMap::COL_ID' => 'ID',
         'COL_ID' => 'ID',
         'login_attempts.id' => 'ID',
+        'Username' => 'USERNAME',
+        'LoginAttempt.Username' => 'USERNAME',
+        'username' => 'USERNAME',
+        'loginAttempt.username' => 'USERNAME',
+        'LoginAttemptTableMap::COL_USERNAME' => 'USERNAME',
+        'COL_USERNAME' => 'USERNAME',
+        'login_attempts.username' => 'USERNAME',
         'AttemptedAt' => 'ATTEMPTED_AT',
         'LoginAttempt.AttemptedAt' => 'ATTEMPTED_AT',
         'attemptedAt' => 'ATTEMPTED_AT',
@@ -149,20 +166,29 @@ class LoginAttemptTableMap extends TableMap
         'COL_ATTEMPTED_AT' => 'ATTEMPTED_AT',
         'attempted_at' => 'ATTEMPTED_AT',
         'login_attempts.attempted_at' => 'ATTEMPTED_AT',
-        'Username' => 'USERNAME',
-        'LoginAttempt.Username' => 'USERNAME',
-        'username' => 'USERNAME',
-        'loginAttempt.username' => 'USERNAME',
-        'LoginAttemptTableMap::COL_USERNAME' => 'USERNAME',
-        'COL_USERNAME' => 'USERNAME',
-        'login_attempts.username' => 'USERNAME',
-        'Pass' => 'PASS',
-        'LoginAttempt.Pass' => 'PASS',
-        'pass' => 'PASS',
-        'loginAttempt.pass' => 'PASS',
-        'LoginAttemptTableMap::COL_PASS' => 'PASS',
-        'COL_PASS' => 'PASS',
-        'login_attempts.pass' => 'PASS',
+        'Remember' => 'REMEMBER',
+        'LoginAttempt.Remember' => 'REMEMBER',
+        'remember' => 'REMEMBER',
+        'loginAttempt.remember' => 'REMEMBER',
+        'LoginAttemptTableMap::COL_REMEMBER' => 'REMEMBER',
+        'COL_REMEMBER' => 'REMEMBER',
+        'login_attempts.remember' => 'REMEMBER',
+        'UserId' => 'USER_ID',
+        'LoginAttempt.UserId' => 'USER_ID',
+        'userId' => 'USER_ID',
+        'loginAttempt.userId' => 'USER_ID',
+        'LoginAttemptTableMap::COL_USER_ID' => 'USER_ID',
+        'COL_USER_ID' => 'USER_ID',
+        'user_id' => 'USER_ID',
+        'login_attempts.user_id' => 'USER_ID',
+        'LogoutAt' => 'LOGOUT_AT',
+        'LoginAttempt.LogoutAt' => 'LOGOUT_AT',
+        'logoutAt' => 'LOGOUT_AT',
+        'loginAttempt.logoutAt' => 'LOGOUT_AT',
+        'LoginAttemptTableMap::COL_LOGOUT_AT' => 'LOGOUT_AT',
+        'COL_LOGOUT_AT' => 'LOGOUT_AT',
+        'logout_at' => 'LOGOUT_AT',
+        'login_attempts.logout_at' => 'LOGOUT_AT',
         'Note' => 'NOTE',
         'LoginAttempt.Note' => 'NOTE',
         'note' => 'NOTE',
@@ -190,10 +216,12 @@ class LoginAttemptTableMap extends TableMap
         $this->setUseIdGenerator(true);
         // columns
         $this->addPrimaryKey('id', 'Id', 'INTEGER', true, null, null);
+        $this->addColumn('username', 'Username', 'VARCHAR', true, 63, '');
         $this->addColumn('attempted_at', 'AttemptedAt', 'TIMESTAMP', true, null, 'CURRENT_TIMESTAMP');
-        $this->addColumn('username', 'Username', 'VARCHAR', true, 63, null);
-        $this->addColumn('pass', 'Pass', 'BOOLEAN', true, 1, null);
-        $this->addColumn('note', 'Note', 'VARCHAR', true, 255, null);
+        $this->addColumn('remember', 'Remember', 'BOOLEAN', true, 1, true);
+        $this->addForeignKey('user_id', 'UserId', 'INTEGER', 'users', 'id', false, null, 0);
+        $this->addColumn('logout_at', 'LogoutAt', 'TIMESTAMP', false, null, null);
+        $this->addColumn('note', 'Note', 'VARCHAR', true, 255, '');
     } // initialize()
 
     /**
@@ -201,6 +229,13 @@ class LoginAttemptTableMap extends TableMap
      */
     public function buildRelations()
     {
+        $this->addRelation('User', '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\User', RelationMap::MANY_TO_ONE, array (
+  0 =>
+  array (
+    0 => ':user_id',
+    1 => ':id',
+  ),
+), null, 'NO ACTION', null, false);
     } // buildRelations()
 
     /**
@@ -345,15 +380,19 @@ class LoginAttemptTableMap extends TableMap
     {
         if (null === $alias) {
             $criteria->addSelectColumn(LoginAttemptTableMap::COL_ID);
-            $criteria->addSelectColumn(LoginAttemptTableMap::COL_ATTEMPTED_AT);
             $criteria->addSelectColumn(LoginAttemptTableMap::COL_USERNAME);
-            $criteria->addSelectColumn(LoginAttemptTableMap::COL_PASS);
+            $criteria->addSelectColumn(LoginAttemptTableMap::COL_ATTEMPTED_AT);
+            $criteria->addSelectColumn(LoginAttemptTableMap::COL_REMEMBER);
+            $criteria->addSelectColumn(LoginAttemptTableMap::COL_USER_ID);
+            $criteria->addSelectColumn(LoginAttemptTableMap::COL_LOGOUT_AT);
             $criteria->addSelectColumn(LoginAttemptTableMap::COL_NOTE);
         } else {
             $criteria->addSelectColumn($alias . '.id');
-            $criteria->addSelectColumn($alias . '.attempted_at');
             $criteria->addSelectColumn($alias . '.username');
-            $criteria->addSelectColumn($alias . '.pass');
+            $criteria->addSelectColumn($alias . '.attempted_at');
+            $criteria->addSelectColumn($alias . '.remember');
+            $criteria->addSelectColumn($alias . '.user_id');
+            $criteria->addSelectColumn($alias . '.logout_at');
             $criteria->addSelectColumn($alias . '.note');
         }
     }
@@ -373,15 +412,19 @@ class LoginAttemptTableMap extends TableMap
     {
         if (null === $alias) {
             $criteria->removeSelectColumn(LoginAttemptTableMap::COL_ID);
-            $criteria->removeSelectColumn(LoginAttemptTableMap::COL_ATTEMPTED_AT);
             $criteria->removeSelectColumn(LoginAttemptTableMap::COL_USERNAME);
-            $criteria->removeSelectColumn(LoginAttemptTableMap::COL_PASS);
+            $criteria->removeSelectColumn(LoginAttemptTableMap::COL_ATTEMPTED_AT);
+            $criteria->removeSelectColumn(LoginAttemptTableMap::COL_REMEMBER);
+            $criteria->removeSelectColumn(LoginAttemptTableMap::COL_USER_ID);
+            $criteria->removeSelectColumn(LoginAttemptTableMap::COL_LOGOUT_AT);
             $criteria->removeSelectColumn(LoginAttemptTableMap::COL_NOTE);
         } else {
             $criteria->removeSelectColumn($alias . '.id');
-            $criteria->removeSelectColumn($alias . '.attempted_at');
             $criteria->removeSelectColumn($alias . '.username');
-            $criteria->removeSelectColumn($alias . '.pass');
+            $criteria->removeSelectColumn($alias . '.attempted_at');
+            $criteria->removeSelectColumn($alias . '.remember');
+            $criteria->removeSelectColumn($alias . '.user_id');
+            $criteria->removeSelectColumn($alias . '.logout_at');
             $criteria->removeSelectColumn($alias . '.note');
         }
     }

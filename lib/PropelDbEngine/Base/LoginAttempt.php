@@ -18,6 +18,8 @@ use Propel\Runtime\Map\TableMap;
 use Propel\Runtime\Parser\AbstractParser;
 use Propel\Runtime\Util\PropelDateTime;
 use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttemptQuery as ChildLoginAttemptQuery;
+use Sbehnfeldt\Webapp\PropelDbEngine\User as ChildUser;
+use Sbehnfeldt\Webapp\PropelDbEngine\UserQuery as ChildUserQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\Map\LoginAttemptTableMap;
 
 /**
@@ -69,6 +71,14 @@ abstract class LoginAttempt implements ActiveRecordInterface
     protected $id;
 
     /**
+     * The value for the username field.
+     *
+     * Note: this column has a database default value of: ''
+     * @var        string
+     */
+    protected $username;
+
+    /**
      * The value for the attempted_at field.
      *
      * Note: this column has a database default value of: (expression) CURRENT_TIMESTAMP
@@ -77,25 +87,40 @@ abstract class LoginAttempt implements ActiveRecordInterface
     protected $attempted_at;
 
     /**
-     * The value for the username field.
+     * The value for the remember field.
      *
-     * @var        string
-     */
-    protected $username;
-
-    /**
-     * The value for the pass field.
-     *
+     * Note: this column has a database default value of: true
      * @var        boolean
      */
-    protected $pass;
+    protected $remember;
+
+    /**
+     * The value for the user_id field.
+     *
+     * Note: this column has a database default value of: 0
+     * @var        int|null
+     */
+    protected $user_id;
+
+    /**
+     * The value for the logout_at field.
+     *
+     * @var        DateTime|null
+     */
+    protected $logout_at;
 
     /**
      * The value for the note field.
      *
+     * Note: this column has a database default value of: ''
      * @var        string
      */
     protected $note;
+
+    /**
+     * @var        ChildUser
+     */
+    protected $aUser;
 
     /**
      * Flag to prevent endless save loop, if this object is referenced
@@ -113,6 +138,10 @@ abstract class LoginAttempt implements ActiveRecordInterface
      */
     public function applyDefaultValues()
     {
+        $this->username = '';
+        $this->remember = true;
+        $this->user_id = 0;
+        $this->note = '';
     }
 
     /**
@@ -352,6 +381,16 @@ abstract class LoginAttempt implements ActiveRecordInterface
     }
 
     /**
+     * Get the [username] column value.
+     *
+     * @return string
+     */
+    public function getUsername()
+    {
+        return $this->username;
+    }
+
+    /**
      * Get the [optionally formatted] temporal [attempted_at] column value.
      *
      *
@@ -374,33 +413,55 @@ abstract class LoginAttempt implements ActiveRecordInterface
     }
 
     /**
-     * Get the [username] column value.
-     *
-     * @return string
-     */
-    public function getUsername()
-    {
-        return $this->username;
-    }
-
-    /**
-     * Get the [pass] column value.
+     * Get the [remember] column value.
      *
      * @return boolean
      */
-    public function getPass()
+    public function getRemember()
     {
-        return $this->pass;
+        return $this->remember;
     }
 
     /**
-     * Get the [pass] column value.
+     * Get the [remember] column value.
      *
      * @return boolean
      */
-    public function isPass()
+    public function isRemember()
     {
-        return $this->getPass();
+        return $this->getRemember();
+    }
+
+    /**
+     * Get the [user_id] column value.
+     *
+     * @return int|null
+     */
+    public function getUserId()
+    {
+        return $this->user_id;
+    }
+
+    /**
+     * Get the [optionally formatted] temporal [logout_at] column value.
+     *
+     *
+     * @param string|null $format The date/time format string (either date()-style or strftime()-style).
+     *   If format is NULL, then the raw DateTime object will be returned.
+     *
+     * @return string|DateTime|null Formatted date/time value as string or DateTime object (if format is NULL), NULL if column is NULL, and 0 if column value is 0000-00-00 00:00:00
+     *
+     * @throws PropelException - if unable to parse/validate the date/time value.
+     *
+     * @psalm-return ($format is null ? DateTime|null : string|null)
+     */
+    public function getLogoutAt($format = null)
+    {
+        if ($format === null) {
+            return $this->logout_at;
+        } else {
+            return $this->logout_at instanceof \DateTimeInterface ? $this->logout_at->format($format) : null;
+        }
     }
 
     /**
@@ -434,26 +495,6 @@ abstract class LoginAttempt implements ActiveRecordInterface
     } // setId()
 
     /**
-     * Sets the value of [attempted_at] column to a normalized version of the date/time value specified.
-     *
-     * @param  string|integer|\DateTimeInterface $v string, integer (timestamp), or \DateTimeInterface value.
-     *               Empty strings are treated as NULL.
-     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt The current object (for fluent API support)
-     */
-    public function setAttemptedAt($v)
-    {
-        $dt = PropelDateTime::newInstance($v, null, 'DateTime');
-        if ($this->attempted_at !== null || $dt !== null) {
-            if ($this->attempted_at === null || $dt === null || $dt->format("Y-m-d H:i:s.u") !== $this->attempted_at->format("Y-m-d H:i:s.u")) {
-                $this->attempted_at = $dt === null ? null : clone $dt;
-                $this->modifiedColumns[LoginAttemptTableMap::COL_ATTEMPTED_AT] = true;
-            }
-        } // if either are not null
-
-        return $this;
-    } // setAttemptedAt()
-
-    /**
      * Set the value of [username] column.
      *
      * @param string $v New value
@@ -474,7 +515,27 @@ abstract class LoginAttempt implements ActiveRecordInterface
     } // setUsername()
 
     /**
-     * Sets the value of the [pass] column.
+     * Sets the value of [attempted_at] column to a normalized version of the date/time value specified.
+     *
+     * @param  string|integer|\DateTimeInterface $v string, integer (timestamp), or \DateTimeInterface value.
+     *               Empty strings are treated as NULL.
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt The current object (for fluent API support)
+     */
+    public function setAttemptedAt($v)
+    {
+        $dt = PropelDateTime::newInstance($v, null, 'DateTime');
+        if ($this->attempted_at !== null || $dt !== null) {
+            if ($this->attempted_at === null || $dt === null || $dt->format("Y-m-d H:i:s.u") !== $this->attempted_at->format("Y-m-d H:i:s.u")) {
+                $this->attempted_at = $dt === null ? null : clone $dt;
+                $this->modifiedColumns[LoginAttemptTableMap::COL_ATTEMPTED_AT] = true;
+            }
+        } // if either are not null
+
+        return $this;
+    } // setAttemptedAt()
+
+    /**
+     * Sets the value of the [remember] column.
      * Non-boolean arguments are converted using the following rules:
      *   * 1, '1', 'true',  'on',  and 'yes' are converted to boolean true
      *   * 0, '0', 'false', 'off', and 'no'  are converted to boolean false
@@ -483,7 +544,7 @@ abstract class LoginAttempt implements ActiveRecordInterface
      * @param  boolean|integer|string $v The new value
      * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt The current object (for fluent API support)
      */
-    public function setPass($v)
+    public function setRemember($v)
     {
         if ($v !== null) {
             if (is_string($v)) {
@@ -493,13 +554,57 @@ abstract class LoginAttempt implements ActiveRecordInterface
             }
         }
 
-        if ($this->pass !== $v) {
-            $this->pass = $v;
-            $this->modifiedColumns[LoginAttemptTableMap::COL_PASS] = true;
+        if ($this->remember !== $v) {
+            $this->remember = $v;
+            $this->modifiedColumns[LoginAttemptTableMap::COL_REMEMBER] = true;
         }
 
         return $this;
-    } // setPass()
+    } // setRemember()
+
+    /**
+     * Set the value of [user_id] column.
+     *
+     * @param int|null $v New value
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt The current object (for fluent API support)
+     */
+    public function setUserId($v)
+    {
+        if ($v !== null) {
+            $v = (int) $v;
+        }
+
+        if ($this->user_id !== $v) {
+            $this->user_id = $v;
+            $this->modifiedColumns[LoginAttemptTableMap::COL_USER_ID] = true;
+        }
+
+        if ($this->aUser !== null && $this->aUser->getId() !== $v) {
+            $this->aUser = null;
+        }
+
+        return $this;
+    } // setUserId()
+
+    /**
+     * Sets the value of [logout_at] column to a normalized version of the date/time value specified.
+     *
+     * @param  string|integer|\DateTimeInterface|null $v string, integer (timestamp), or \DateTimeInterface value.
+     *               Empty strings are treated as NULL.
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt The current object (for fluent API support)
+     */
+    public function setLogoutAt($v)
+    {
+        $dt = PropelDateTime::newInstance($v, null, 'DateTime');
+        if ($this->logout_at !== null || $dt !== null) {
+            if ($this->logout_at === null || $dt === null || $dt->format("Y-m-d H:i:s.u") !== $this->logout_at->format("Y-m-d H:i:s.u")) {
+                $this->logout_at = $dt === null ? null : clone $dt;
+                $this->modifiedColumns[LoginAttemptTableMap::COL_LOGOUT_AT] = true;
+            }
+        } // if either are not null
+
+        return $this;
+    } // setLogoutAt()
 
     /**
      * Set the value of [note] column.
@@ -531,6 +636,22 @@ abstract class LoginAttempt implements ActiveRecordInterface
      */
     public function hasOnlyDefaultValues()
     {
+            if ($this->username !== '') {
+                return false;
+            }
+
+            if ($this->remember !== true) {
+                return false;
+            }
+
+            if ($this->user_id !== 0) {
+                return false;
+            }
+
+            if ($this->note !== '') {
+                return false;
+            }
+
         // otherwise, everything was equal, so return TRUE
         return true;
     } // hasOnlyDefaultValues()
@@ -560,19 +681,28 @@ abstract class LoginAttempt implements ActiveRecordInterface
             $col = $row[TableMap::TYPE_NUM == $indexType ? 0 + $startcol : LoginAttemptTableMap::translateFieldName('Id', TableMap::TYPE_PHPNAME, $indexType)];
             $this->id = (null !== $col) ? (int) $col : null;
 
-            $col = $row[TableMap::TYPE_NUM == $indexType ? 1 + $startcol : LoginAttemptTableMap::translateFieldName('AttemptedAt', TableMap::TYPE_PHPNAME, $indexType)];
+            $col = $row[TableMap::TYPE_NUM == $indexType ? 1 + $startcol : LoginAttemptTableMap::translateFieldName('Username', TableMap::TYPE_PHPNAME, $indexType)];
+            $this->username = (null !== $col) ? (string) $col : null;
+
+            $col = $row[TableMap::TYPE_NUM == $indexType ? 2 + $startcol : LoginAttemptTableMap::translateFieldName('AttemptedAt', TableMap::TYPE_PHPNAME, $indexType)];
             if ($col === '0000-00-00 00:00:00') {
                 $col = null;
             }
             $this->attempted_at = (null !== $col) ? PropelDateTime::newInstance($col, null, 'DateTime') : null;
 
-            $col = $row[TableMap::TYPE_NUM == $indexType ? 2 + $startcol : LoginAttemptTableMap::translateFieldName('Username', TableMap::TYPE_PHPNAME, $indexType)];
-            $this->username = (null !== $col) ? (string) $col : null;
+            $col = $row[TableMap::TYPE_NUM == $indexType ? 3 + $startcol : LoginAttemptTableMap::translateFieldName('Remember', TableMap::TYPE_PHPNAME, $indexType)];
+            $this->remember = (null !== $col) ? (boolean) $col : null;
 
-            $col = $row[TableMap::TYPE_NUM == $indexType ? 3 + $startcol : LoginAttemptTableMap::translateFieldName('Pass', TableMap::TYPE_PHPNAME, $indexType)];
-            $this->pass = (null !== $col) ? (boolean) $col : null;
+            $col = $row[TableMap::TYPE_NUM == $indexType ? 4 + $startcol : LoginAttemptTableMap::translateFieldName('UserId', TableMap::TYPE_PHPNAME, $indexType)];
+            $this->user_id = (null !== $col) ? (int) $col : null;
 
-            $col = $row[TableMap::TYPE_NUM == $indexType ? 4 + $startcol : LoginAttemptTableMap::translateFieldName('Note', TableMap::TYPE_PHPNAME, $indexType)];
+            $col = $row[TableMap::TYPE_NUM == $indexType ? 5 + $startcol : LoginAttemptTableMap::translateFieldName('LogoutAt', TableMap::TYPE_PHPNAME, $indexType)];
+            if ($col === '0000-00-00 00:00:00') {
+                $col = null;
+            }
+            $this->logout_at = (null !== $col) ? PropelDateTime::newInstance($col, null, 'DateTime') : null;
+
+            $col = $row[TableMap::TYPE_NUM == $indexType ? 6 + $startcol : LoginAttemptTableMap::translateFieldName('Note', TableMap::TYPE_PHPNAME, $indexType)];
             $this->note = (null !== $col) ? (string) $col : null;
             $this->resetModified();
 
@@ -582,7 +712,7 @@ abstract class LoginAttempt implements ActiveRecordInterface
                 $this->ensureConsistency();
             }
 
-            return $startcol + 5; // 5 = LoginAttemptTableMap::NUM_HYDRATE_COLUMNS.
+            return $startcol + 7; // 7 = LoginAttemptTableMap::NUM_HYDRATE_COLUMNS.
 
         } catch (Exception $e) {
             throw new PropelException(sprintf('Error populating %s object', '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\LoginAttempt'), 0, $e);
@@ -604,6 +734,9 @@ abstract class LoginAttempt implements ActiveRecordInterface
      */
     public function ensureConsistency()
     {
+        if ($this->aUser !== null && $this->user_id !== $this->aUser->getId()) {
+            $this->aUser = null;
+        }
     } // ensureConsistency
 
     /**
@@ -643,6 +776,7 @@ abstract class LoginAttempt implements ActiveRecordInterface
 
         if ($deep) {  // also de-associate any related objects?
 
+            $this->aUser = null;
         } // if (deep)
     }
 
@@ -746,6 +880,18 @@ abstract class LoginAttempt implements ActiveRecordInterface
         if (!$this->alreadyInSave) {
             $this->alreadyInSave = true;
 
+            // We call the save method on the following object(s) if they
+            // were passed to this object by their corresponding set
+            // method.  This object relates to these object(s) by a
+            // foreign key reference.
+
+            if ($this->aUser !== null) {
+                if ($this->aUser->isModified() || $this->aUser->isNew()) {
+                    $affectedRows += $this->aUser->save($con);
+                }
+                $this->setUser($this->aUser);
+            }
+
             if ($this->isNew() || $this->isModified()) {
                 // persist changes
                 if ($this->isNew()) {
@@ -786,14 +932,20 @@ abstract class LoginAttempt implements ActiveRecordInterface
         if ($this->isColumnModified(LoginAttemptTableMap::COL_ID)) {
             $modifiedColumns[':p' . $index++]  = 'id';
         }
-        if ($this->isColumnModified(LoginAttemptTableMap::COL_ATTEMPTED_AT)) {
-            $modifiedColumns[':p' . $index++]  = 'attempted_at';
-        }
         if ($this->isColumnModified(LoginAttemptTableMap::COL_USERNAME)) {
             $modifiedColumns[':p' . $index++]  = 'username';
         }
-        if ($this->isColumnModified(LoginAttemptTableMap::COL_PASS)) {
-            $modifiedColumns[':p' . $index++]  = 'pass';
+        if ($this->isColumnModified(LoginAttemptTableMap::COL_ATTEMPTED_AT)) {
+            $modifiedColumns[':p' . $index++]  = 'attempted_at';
+        }
+        if ($this->isColumnModified(LoginAttemptTableMap::COL_REMEMBER)) {
+            $modifiedColumns[':p' . $index++]  = 'remember';
+        }
+        if ($this->isColumnModified(LoginAttemptTableMap::COL_USER_ID)) {
+            $modifiedColumns[':p' . $index++]  = 'user_id';
+        }
+        if ($this->isColumnModified(LoginAttemptTableMap::COL_LOGOUT_AT)) {
+            $modifiedColumns[':p' . $index++]  = 'logout_at';
         }
         if ($this->isColumnModified(LoginAttemptTableMap::COL_NOTE)) {
             $modifiedColumns[':p' . $index++]  = 'note';
@@ -812,14 +964,20 @@ abstract class LoginAttempt implements ActiveRecordInterface
                     case 'id':
                         $stmt->bindValue($identifier, $this->id, PDO::PARAM_INT);
                         break;
-                    case 'attempted_at':
-                        $stmt->bindValue($identifier, $this->attempted_at ? $this->attempted_at->format("Y-m-d H:i:s.u") : null, PDO::PARAM_STR);
-                        break;
                     case 'username':
                         $stmt->bindValue($identifier, $this->username, PDO::PARAM_STR);
                         break;
-                    case 'pass':
-                        $stmt->bindValue($identifier, (int) $this->pass, PDO::PARAM_INT);
+                    case 'attempted_at':
+                        $stmt->bindValue($identifier, $this->attempted_at ? $this->attempted_at->format("Y-m-d H:i:s.u") : null, PDO::PARAM_STR);
+                        break;
+                    case 'remember':
+                        $stmt->bindValue($identifier, (int) $this->remember, PDO::PARAM_INT);
+                        break;
+                    case 'user_id':
+                        $stmt->bindValue($identifier, $this->user_id, PDO::PARAM_INT);
+                        break;
+                    case 'logout_at':
+                        $stmt->bindValue($identifier, $this->logout_at ? $this->logout_at->format("Y-m-d H:i:s.u") : null, PDO::PARAM_STR);
                         break;
                     case 'note':
                         $stmt->bindValue($identifier, $this->note, PDO::PARAM_STR);
@@ -890,15 +1048,21 @@ abstract class LoginAttempt implements ActiveRecordInterface
                 return $this->getId();
                 break;
             case 1:
-                return $this->getAttemptedAt();
-                break;
-            case 2:
                 return $this->getUsername();
                 break;
+            case 2:
+                return $this->getAttemptedAt();
+                break;
             case 3:
-                return $this->getPass();
+                return $this->getRemember();
                 break;
             case 4:
+                return $this->getUserId();
+                break;
+            case 5:
+                return $this->getLogoutAt();
+                break;
+            case 6:
                 return $this->getNote();
                 break;
             default:
@@ -918,10 +1082,11 @@ abstract class LoginAttempt implements ActiveRecordInterface
      *                    Defaults to TableMap::TYPE_PHPNAME.
      * @param     boolean $includeLazyLoadColumns (optional) Whether to include lazy loaded columns. Defaults to TRUE.
      * @param     array $alreadyDumpedObjects List of objects to skip to avoid recursion
+     * @param     boolean $includeForeignObjects (optional) Whether to include hydrated related objects. Default to FALSE.
      *
      * @return array an associative array containing the field names (as keys) and field values
      */
-    public function toArray($keyType = TableMap::TYPE_PHPNAME, $includeLazyLoadColumns = true, $alreadyDumpedObjects = array())
+    public function toArray($keyType = TableMap::TYPE_PHPNAME, $includeLazyLoadColumns = true, $alreadyDumpedObjects = array(), $includeForeignObjects = false)
     {
 
         if (isset($alreadyDumpedObjects['LoginAttempt'][$this->hashCode()])) {
@@ -931,13 +1096,19 @@ abstract class LoginAttempt implements ActiveRecordInterface
         $keys = LoginAttemptTableMap::getFieldNames($keyType);
         $result = array(
             $keys[0] => $this->getId(),
-            $keys[1] => $this->getAttemptedAt(),
-            $keys[2] => $this->getUsername(),
-            $keys[3] => $this->getPass(),
-            $keys[4] => $this->getNote(),
+            $keys[1] => $this->getUsername(),
+            $keys[2] => $this->getAttemptedAt(),
+            $keys[3] => $this->getRemember(),
+            $keys[4] => $this->getUserId(),
+            $keys[5] => $this->getLogoutAt(),
+            $keys[6] => $this->getNote(),
         );
-        if ($result[$keys[1]] instanceof \DateTimeInterface) {
-            $result[$keys[1]] = $result[$keys[1]]->format('Y-m-d H:i:s.u');
+        if ($result[$keys[2]] instanceof \DateTimeInterface) {
+            $result[$keys[2]] = $result[$keys[2]]->format('Y-m-d H:i:s.u');
+        }
+
+        if ($result[$keys[5]] instanceof \DateTimeInterface) {
+            $result[$keys[5]] = $result[$keys[5]]->format('Y-m-d H:i:s.u');
         }
 
         $virtualColumns = $this->virtualColumns;
@@ -945,6 +1116,23 @@ abstract class LoginAttempt implements ActiveRecordInterface
             $result[$key] = $virtualColumn;
         }
 
+        if ($includeForeignObjects) {
+            if (null !== $this->aUser) {
+
+                switch ($keyType) {
+                    case TableMap::TYPE_CAMELNAME:
+                        $key = 'user';
+                        break;
+                    case TableMap::TYPE_FIELDNAME:
+                        $key = 'users';
+                        break;
+                    default:
+                        $key = 'User';
+                }
+
+                $result[$key] = $this->aUser->toArray($keyType, $includeLazyLoadColumns,  $alreadyDumpedObjects, true);
+            }
+        }
 
         return $result;
     }
@@ -982,15 +1170,21 @@ abstract class LoginAttempt implements ActiveRecordInterface
                 $this->setId($value);
                 break;
             case 1:
-                $this->setAttemptedAt($value);
-                break;
-            case 2:
                 $this->setUsername($value);
                 break;
+            case 2:
+                $this->setAttemptedAt($value);
+                break;
             case 3:
-                $this->setPass($value);
+                $this->setRemember($value);
                 break;
             case 4:
+                $this->setUserId($value);
+                break;
+            case 5:
+                $this->setLogoutAt($value);
+                break;
+            case 6:
                 $this->setNote($value);
                 break;
         } // switch()
@@ -1023,16 +1217,22 @@ abstract class LoginAttempt implements ActiveRecordInterface
             $this->setId($arr[$keys[0]]);
         }
         if (array_key_exists($keys[1], $arr)) {
-            $this->setAttemptedAt($arr[$keys[1]]);
+            $this->setUsername($arr[$keys[1]]);
         }
         if (array_key_exists($keys[2], $arr)) {
-            $this->setUsername($arr[$keys[2]]);
+            $this->setAttemptedAt($arr[$keys[2]]);
         }
         if (array_key_exists($keys[3], $arr)) {
-            $this->setPass($arr[$keys[3]]);
+            $this->setRemember($arr[$keys[3]]);
         }
         if (array_key_exists($keys[4], $arr)) {
-            $this->setNote($arr[$keys[4]]);
+            $this->setUserId($arr[$keys[4]]);
+        }
+        if (array_key_exists($keys[5], $arr)) {
+            $this->setLogoutAt($arr[$keys[5]]);
+        }
+        if (array_key_exists($keys[6], $arr)) {
+            $this->setNote($arr[$keys[6]]);
         }
 
         return $this;
@@ -1080,14 +1280,20 @@ abstract class LoginAttempt implements ActiveRecordInterface
         if ($this->isColumnModified(LoginAttemptTableMap::COL_ID)) {
             $criteria->add(LoginAttemptTableMap::COL_ID, $this->id);
         }
-        if ($this->isColumnModified(LoginAttemptTableMap::COL_ATTEMPTED_AT)) {
-            $criteria->add(LoginAttemptTableMap::COL_ATTEMPTED_AT, $this->attempted_at);
-        }
         if ($this->isColumnModified(LoginAttemptTableMap::COL_USERNAME)) {
             $criteria->add(LoginAttemptTableMap::COL_USERNAME, $this->username);
         }
-        if ($this->isColumnModified(LoginAttemptTableMap::COL_PASS)) {
-            $criteria->add(LoginAttemptTableMap::COL_PASS, $this->pass);
+        if ($this->isColumnModified(LoginAttemptTableMap::COL_ATTEMPTED_AT)) {
+            $criteria->add(LoginAttemptTableMap::COL_ATTEMPTED_AT, $this->attempted_at);
+        }
+        if ($this->isColumnModified(LoginAttemptTableMap::COL_REMEMBER)) {
+            $criteria->add(LoginAttemptTableMap::COL_REMEMBER, $this->remember);
+        }
+        if ($this->isColumnModified(LoginAttemptTableMap::COL_USER_ID)) {
+            $criteria->add(LoginAttemptTableMap::COL_USER_ID, $this->user_id);
+        }
+        if ($this->isColumnModified(LoginAttemptTableMap::COL_LOGOUT_AT)) {
+            $criteria->add(LoginAttemptTableMap::COL_LOGOUT_AT, $this->logout_at);
         }
         if ($this->isColumnModified(LoginAttemptTableMap::COL_NOTE)) {
             $criteria->add(LoginAttemptTableMap::COL_NOTE, $this->note);
@@ -1178,9 +1384,11 @@ abstract class LoginAttempt implements ActiveRecordInterface
      */
     public function copyInto($copyObj, $deepCopy = false, $makeNew = true)
     {
-        $copyObj->setAttemptedAt($this->getAttemptedAt());
         $copyObj->setUsername($this->getUsername());
-        $copyObj->setPass($this->getPass());
+        $copyObj->setAttemptedAt($this->getAttemptedAt());
+        $copyObj->setRemember($this->getRemember());
+        $copyObj->setUserId($this->getUserId());
+        $copyObj->setLogoutAt($this->getLogoutAt());
         $copyObj->setNote($this->getNote());
         if ($makeNew) {
             $copyObj->setNew(true);
@@ -1211,16 +1419,72 @@ abstract class LoginAttempt implements ActiveRecordInterface
     }
 
     /**
+     * Declares an association between this object and a ChildUser object.
+     *
+     * @param  ChildUser|null $v
+     * @return $this|\Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt The current object (for fluent API support)
+     * @throws PropelException
+     */
+    public function setUser(ChildUser $v = null)
+    {
+        if ($v === null) {
+            $this->setUserId(0);
+        } else {
+            $this->setUserId($v->getId());
+        }
+
+        $this->aUser = $v;
+
+        // Add binding for other direction of this n:n relationship.
+        // If this object has already been added to the ChildUser object, it will not be re-added.
+        if ($v !== null) {
+            $v->addLoginAttempt($this);
+        }
+
+
+        return $this;
+    }
+
+
+    /**
+     * Get the associated ChildUser object
+     *
+     * @param  ConnectionInterface $con Optional Connection object.
+     * @return ChildUser|null The associated ChildUser object.
+     * @throws PropelException
+     */
+    public function getUser(ConnectionInterface $con = null)
+    {
+        if ($this->aUser === null && ($this->user_id != 0)) {
+            $this->aUser = ChildUserQuery::create()->findPk($this->user_id, $con);
+            /* The following can be used additionally to
+                guarantee the related object contains a reference
+                to this object.  This level of coupling may, however, be
+                undesirable since it could result in an only partially populated collection
+                in the referenced object.
+                $this->aUser->addLoginAttempts($this);
+             */
+        }
+
+        return $this->aUser;
+    }
+
+    /**
      * Clears the current object, sets all attributes to their default values and removes
      * outgoing references as well as back-references (from other objects to this one. Results probably in a database
      * change of those foreign objects when you call `save` there).
      */
     public function clear()
     {
+        if (null !== $this->aUser) {
+            $this->aUser->removeLoginAttempt($this);
+        }
         $this->id = null;
-        $this->attempted_at = null;
         $this->username = null;
-        $this->pass = null;
+        $this->attempted_at = null;
+        $this->remember = null;
+        $this->user_id = null;
+        $this->logout_at = null;
         $this->note = null;
         $this->alreadyInSave = false;
         $this->clearAllReferences();
@@ -1243,6 +1507,7 @@ abstract class LoginAttempt implements ActiveRecordInterface
         if ($deep) {
         } // if ($deep)
 
+        $this->aUser = null;
     }
 
     /**
