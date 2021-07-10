@@ -23,11 +23,16 @@ class WebApp extends App
     /** @var Logger */
     private $logger;
 
+    /** @var integer */
+    private $rememberMeDuration;
+
+
     public function __construct($container = [])
     {
         parent::__construct($container);
         $this->renderer
             = $this->logger
+            = $this->rememberMeDuration
             = null;
     }
 
@@ -42,7 +47,15 @@ class WebApp extends App
                 $this->renderer = $this->getContainer()->get('renderer');
             }
             if (!$this->renderer) {
-                $this->renderer = new TwigPageRenderer($this->getContainer()->get('settings')->get('twig'));
+                // Use Twig page renderer by default
+                if ($this->getContainer()->get('settings')->has('twig')) {
+                    $cfg = $this->getContainer()->get('settings')->get('twig');
+                } else {
+                    $cfg = [
+                        "templates" => "../templates/pages"
+                    ];
+                }
+                $this->renderer = new TwigPageRenderer($cfg);
             }
         }
         return $this->renderer;
@@ -61,12 +74,15 @@ class WebApp extends App
      */
     public function getLogger(): ?Logger
     {
-        if ( !$this->logger) {
-            if ( $this->getContainer()->has( 'logger')) {
+        if (!$this->logger) {
+            if ($this->getContainer()->has('logger')) {
                 $this->logger = $this->getContainer()->get('logger');
             }
-            if ( !$this->logger) {
-                if ( $this->getContainer()->get('settings')->has('monolog')) {
+            if (!$this->logger) {
+                // If no logger is specified in the dependency container,
+                // use a Monolog logger by default.
+                if ($this->getContainer()->get('settings')->has('monolog')) {
+                    // Check config file for settings for monolog
                     $cfg = $this->getContainer()->get('settings')->get('monolog');
                 } else {
                     $cfg = [
@@ -75,9 +91,8 @@ class WebApp extends App
                         'channel' => 'default'
                     ];
                 }
-                $cfg = $this->getContainer()->get('settings')->get('monolog');
-                $handler = new StreamHandler(implode( DIRECTORY_SEPARATOR, [ '..',  $cfg[ 'directory' ], $cfg[ 'filename' ]]));
-                $this->logger = new Logger($cfg[ 'channel']);
+                $handler = new StreamHandler(implode(DIRECTORY_SEPARATOR, ['..', $cfg['directory'], $cfg['filename']]));
+                $this->logger = new Logger($cfg['channel']);
                 $this->logger->pushHandler($handler);
             }
         }
@@ -113,6 +128,23 @@ class WebApp extends App
         }
 
         return $token;
+    }
+
+
+    protected function getRememberMeDuration()
+    {
+        if (!$this->rememberMeDuration) {
+            if ($this->getContainer()->get('settings')->has('remember')) {
+                // Use value specified in config file
+                $this->rememberMeDuration = $this->getContainer()->get('settings')->get('remember');
+            }
+            if (!$this->rememberMeDuration) {
+                // If not specified in config file, use 1 month as the default
+                $this->rememberMeDuration = 30 * 24 * 60 * 60;   // 1 month
+            }
+        }
+
+        return $this->rememberMeDuration;
     }
 
 
@@ -185,7 +217,7 @@ class WebApp extends App
 
         if ($remember) {
             // Generate new remember-me cookies and record
-            $expiration = time() + (30 * 24 * 60 * 60);  // for 1 month
+            $expiration = time() + $this->getRememberMeDuration();
             $random = WebApp::generateToken(32);   // A random string to simulate "password" for remember-me
             setcookie("user_id", $user->getId(), $expiration);
             setcookie("remember-me", $random, $expiration);
@@ -201,7 +233,7 @@ class WebApp extends App
             }
         }
 
-        $note = sprintf( 'User "%s" logged in successfully', $username);
+        $note = sprintf('User "%s" logged in successfully', $username);
         $attempt = new LoginAttempt();
         $attempt->setUsername($username);
         $attempt->setAttemptedAt(time());
@@ -216,20 +248,20 @@ class WebApp extends App
 
     public function logout()
     {
-        if ( isset($_SESSION[ 'user'])) {
+        if (isset($_SESSION['user'])) {
             /** @var User $user */
-            $user = $_SESSION[ 'user' ];
+            $user = $_SESSION['user'];
 
             // Delete "remember me" cookies when user explicitly logs out
             $tokens = TokenAuthQuery::create()->findByUserId($user->getId());
             foreach ($tokens as $token) {
                 try {
                     $token->delete();
-                } catch ( Exception $e) {
+                } catch (Exception $e) {
                     die($e->getMessage());
                 }
             }
-            $this->getLogger()->info( sprintf( 'User "%s" logged out', $user->getUsername()));
+            $this->getLogger()->info(sprintf('User "%s" logged out', $user->getUsername()));
             unset($_SESSION['user']);
         }
         setcookie("user_id", null, time() - 1);
@@ -281,7 +313,7 @@ class WebApp extends App
 
         $this->post('/login', function (Request $req, Response $resp, array $args) use ($web) {
             try {
-                if (!$web->login($_POST['username'], $_POST['password'], isset($_POST[ 'remember']))) {
+                if (!$web->login($_POST['username'], $_POST['password'], isset($_POST['remember']))) {
                     throw new Exception('Unauthorized');
                 }
                 $resp = $resp->withHeader('Location', '/');
@@ -296,13 +328,13 @@ class WebApp extends App
             $resp = $resp->withHeader('Location', '/');
             return $resp;
         });
-        $this->get('/user', function (Request $req, Response $resp, array $args) use ($web) {
-            $user = new User();
-            $user->setUsername('stephen');
-            $user->setPassword(password_hash('stephen', PASSWORD_DEFAULT));
-            $user->setEmail('stephen@behnfeldt.pro');
-            $user->save();
-            $resp = $resp->withHeader('Location', '/');
+
+        // This is a simple route-handler to "initialize" XDebug debugging.
+        // When a browser is first opened, the cookie that triggers debugging doesn't trigger debugging.
+        // This makes debugging session-related features, such as the remember-me cookie, challenging.
+        // This route provides a way of initializing debugging without affecting anything important.
+        $this->get('/foo', function (Request $req, Response $resp, array $args) use ($web) {
+            $resp->getBody()->write('foo');
             return $resp;
         });
 
