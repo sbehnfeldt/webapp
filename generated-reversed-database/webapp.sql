@@ -28,6 +28,21 @@ CREATE TABLE `login_attempts`
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- permissions
+-- ---------------------------------------------------------------------
+
+DROP TABLE IF EXISTS `permissions`;
+
+CREATE TABLE `permissions`
+(
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `slug` VARCHAR(127) NOT NULL,
+    `description` VARCHAR(1023) NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE INDEX `slug` (`slug`)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- token_auths
 -- ---------------------------------------------------------------------
 
@@ -44,6 +59,32 @@ CREATE TABLE `token_auths`
     CONSTRAINT `token_auths_ibfk_1`
         FOREIGN KEY (`user_id`)
         REFERENCES `users` (`id`)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- user_permissions
+-- ---------------------------------------------------------------------
+
+DROP TABLE IF EXISTS `user_permissions`;
+
+CREATE TABLE `user_permissions`
+(
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `user_id` INTEGER NOT NULL,
+    `permissions_id` INTEGER NOT NULL,
+    PRIMARY KEY (`id`),
+    INDEX `user_id` (`user_id`),
+    INDEX `permissions_id` (`permissions_id`),
+    CONSTRAINT `user_permissions_ibfk_1`
+        FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE,
+    CONSTRAINT `user_permissions_ibfk_2`
+        FOREIGN KEY (`permissions_id`)
+        REFERENCES `permissions` (`id`)
         ON UPDATE NO ACTION
         ON DELETE CASCADE
 ) ENGINE=InnoDB;

@@ -15,5 +15,23 @@ use Sbehnfeldt\Webapp\PropelDbEngine\Base\User as BaseUser;
  */
 class User extends BaseUser
 {
+    /**
+     * @param string $slug
+     * @return bool
+     * @throws \Propel\Runtime\Exception\PropelException
+     *
+     * Determine whether the current user has the specified permission
+     */
+    public function hasPermission(string $slug): bool
+    {
+        $perm = PermissionQuery::create()
+            ->findBySlug($slug);
 
+        $p = UserPermissionQuery::create()
+            ->filterByPermission($perm)
+            ->filterByUser($this)
+            ->find();
+
+        return (!$p->isEmpty());
+    }
 }

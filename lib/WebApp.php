@@ -6,6 +6,7 @@ use Exception;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Propel\Runtime\ActiveQuery\Criteria;
+use Sbehnfeldt\Webapp\PropelDbEngine\Base\UserPermissionQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt;
 use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttemptQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth;
@@ -309,7 +310,14 @@ class WebApp extends App
         };
 
         $this->get('/', function (Request $req, Response $resp, array $args) use ($web) {
-            $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_INDEX, []));
+            /** @var User $user */
+            $user = $_SESSION[ 'user' ];
+            if ( !$user->hasPermission('PAGE_HOME')) {
+                $resp = $resp->withStatus(401);
+                $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::HTTP_401, []));
+            } else {
+                $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_INDEX, []));
+            }
             return $resp;
         })->add($isAuthenticated);
 

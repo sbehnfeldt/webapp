@@ -58,7 +58,17 @@ use Sbehnfeldt\Webapp\PropelDbEngine\Map\UserTableMap;
  * @method     ChildUserQuery rightJoinWithTokenAuth() Adds a RIGHT JOIN clause and with to the query using the TokenAuth relation
  * @method     ChildUserQuery innerJoinWithTokenAuth() Adds a INNER JOIN clause and with to the query using the TokenAuth relation
  *
- * @method     \Sbehnfeldt\Webapp\PropelDbEngine\LoginAttemptQuery|\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuthQuery endUse() Finalizes a secondary criteria and merges it with its primary Criteria
+ * @method     ChildUserQuery leftJoinUserPermission($relationAlias = null) Adds a LEFT JOIN clause to the query using the UserPermission relation
+ * @method     ChildUserQuery rightJoinUserPermission($relationAlias = null) Adds a RIGHT JOIN clause to the query using the UserPermission relation
+ * @method     ChildUserQuery innerJoinUserPermission($relationAlias = null) Adds a INNER JOIN clause to the query using the UserPermission relation
+ *
+ * @method     ChildUserQuery joinWithUserPermission($joinType = Criteria::INNER_JOIN) Adds a join clause and with to the query using the UserPermission relation
+ *
+ * @method     ChildUserQuery leftJoinWithUserPermission() Adds a LEFT JOIN clause and with to the query using the UserPermission relation
+ * @method     ChildUserQuery rightJoinWithUserPermission() Adds a RIGHT JOIN clause and with to the query using the UserPermission relation
+ * @method     ChildUserQuery innerJoinWithUserPermission() Adds a INNER JOIN clause and with to the query using the UserPermission relation
+ *
+ * @method     \Sbehnfeldt\Webapp\PropelDbEngine\LoginAttemptQuery|\Sbehnfeldt\Webapp\PropelDbEngine\TokenAuthQuery|\Sbehnfeldt\Webapp\PropelDbEngine\UserPermissionQuery endUse() Finalizes a secondary criteria and merges it with its primary Criteria
  *
  * @method     ChildUser|null findOne(ConnectionInterface $con = null) Return the first ChildUser matching the query
  * @method     ChildUser findOneOrCreate(ConnectionInterface $con = null) Return the first ChildUser matching the query, or a new ChildUser object populated from the query conditions when no match is found
@@ -640,6 +650,134 @@ abstract class UserQuery extends ModelCriteria
     public function useTokenAuthNotExistsQuery($modelAlias = null, $queryClass = null)
     {
         return $this->useExistsQuery('TokenAuth', $modelAlias, $queryClass, 'NOT EXISTS');
+    }
+    /**
+     * Filter the query by a related \Sbehnfeldt\Webapp\PropelDbEngine\UserPermission object
+     *
+     * @param \Sbehnfeldt\Webapp\PropelDbEngine\UserPermission|ObjectCollection $userPermission the related object to use as filter
+     * @param string $comparison Operator to use for the column comparison, defaults to Criteria::EQUAL
+     *
+     * @return ChildUserQuery The current query, for fluid interface
+     */
+    public function filterByUserPermission($userPermission, $comparison = null)
+    {
+        if ($userPermission instanceof \Sbehnfeldt\Webapp\PropelDbEngine\UserPermission) {
+            return $this
+                ->addUsingAlias(UserTableMap::COL_ID, $userPermission->getUserId(), $comparison);
+        } elseif ($userPermission instanceof ObjectCollection) {
+            return $this
+                ->useUserPermissionQuery()
+                ->filterByPrimaryKeys($userPermission->getPrimaryKeys())
+                ->endUse();
+        } else {
+            throw new PropelException('filterByUserPermission() only accepts arguments of type \Sbehnfeldt\Webapp\PropelDbEngine\UserPermission or Collection');
+        }
+    }
+
+    /**
+     * Adds a JOIN clause to the query using the UserPermission relation
+     *
+     * @param     string $relationAlias optional alias for the relation
+     * @param     string $joinType Accepted values are null, 'left join', 'right join', 'inner join'
+     *
+     * @return $this|ChildUserQuery The current query, for fluid interface
+     */
+    public function joinUserPermission($relationAlias = null, $joinType = Criteria::INNER_JOIN)
+    {
+        $tableMap = $this->getTableMap();
+        $relationMap = $tableMap->getRelation('UserPermission');
+
+        // create a ModelJoin object for this join
+        $join = new ModelJoin();
+        $join->setJoinType($joinType);
+        $join->setRelationMap($relationMap, $this->useAliasInSQL ? $this->getModelAlias() : null, $relationAlias);
+        if ($previousJoin = $this->getPreviousJoin()) {
+            $join->setPreviousJoin($previousJoin);
+        }
+
+        // add the ModelJoin to the current object
+        if ($relationAlias) {
+            $this->addAlias($relationAlias, $relationMap->getRightTable()->getName());
+            $this->addJoinObject($join, $relationAlias);
+        } else {
+            $this->addJoinObject($join, 'UserPermission');
+        }
+
+        return $this;
+    }
+
+    /**
+     * Use the UserPermission relation UserPermission object
+     *
+     * @see useQuery()
+     *
+     * @param     string $relationAlias optional alias for the relation,
+     *                                   to be used as main alias in the secondary query
+     * @param     string $joinType Accepted values are null, 'left join', 'right join', 'inner join'
+     *
+     * @return \Sbehnfeldt\Webapp\PropelDbEngine\UserPermissionQuery A secondary query class using the current class as primary query
+     */
+    public function useUserPermissionQuery($relationAlias = null, $joinType = Criteria::INNER_JOIN)
+    {
+        return $this
+            ->joinUserPermission($relationAlias, $joinType)
+            ->useQuery($relationAlias ? $relationAlias : 'UserPermission', '\Sbehnfeldt\Webapp\PropelDbEngine\UserPermissionQuery');
+    }
+
+    /**
+     * Use the UserPermission relation UserPermission object
+     *
+     * @param callable(\Sbehnfeldt\Webapp\PropelDbEngine\UserPermissionQuery):\Sbehnfeldt\Webapp\PropelDbEngine\UserPermissionQuery $callable A function working on the related query
+     *
+     * @param string|null $relationAlias optional alias for the relation
+     *
+     * @param string|null $joinType Accepted values are null, 'left join', 'right join', 'inner join'
+     *
+     * @return $this
+     */
+    public function withUserPermissionQuery(
+        callable $callable,
+        string $relationAlias = null,
+        ?string $joinType = Criteria::INNER_JOIN
+    ) {
+        $relatedQuery = $this->useUserPermissionQuery(
+            $relationAlias,
+            $joinType
+        );
+        $callable($relatedQuery);
+        $relatedQuery->endUse();
+
+        return $this;
+    }
+    /**
+     * Use the relation to UserPermission table for an EXISTS query.
+     *
+     * @see \Propel\Runtime\ActiveQuery\ModelCriteria::useExistsQuery()
+     *
+     * @param string|null $queryClass Allows to use a custom query class for the exists query, like ExtendedBookQuery::class
+     * @param string|null $modelAlias sets an alias for the nested query
+     * @param string $typeOfExists Either ExistsCriterion::TYPE_EXISTS or ExistsCriterion::TYPE_NOT_EXISTS
+     *
+     * @return \Sbehnfeldt\Webapp\PropelDbEngine\UserPermissionQuery The inner query object of the EXISTS statement
+     */
+    public function useUserPermissionExistsQuery($modelAlias = null, $queryClass = null, $typeOfExists = 'EXISTS')
+    {
+        return $this->useExistsQuery('UserPermission', $modelAlias, $queryClass, $typeOfExists);
+    }
+
+    /**
+     * Use the relation to UserPermission table for a NOT EXISTS query.
+     *
+     * @see useUserPermissionExistsQuery()
+     *
+     * @param string|null $modelAlias sets an alias for the nested query
+     * @param string|null $queryClass Allows to use a custom query class for the exists query, like ExtendedBookQuery::class
+     *
+     * @return \Sbehnfeldt\Webapp\PropelDbEngine\UserPermissionQuery The inner query object of the NOT EXISTS statement
+     */
+    public function useUserPermissionNotExistsQuery($modelAlias = null, $queryClass = null)
+    {
+        return $this->useExistsQuery('UserPermission', $modelAlias, $queryClass, 'NOT EXISTS');
     }
     /**
      * Exclude object from result

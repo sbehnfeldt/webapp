@@ -11,12 +11,12 @@ use Propel\Runtime\Exception\PropelException;
 use Propel\Runtime\Map\RelationMap;
 use Propel\Runtime\Map\TableMap;
 use Propel\Runtime\Map\TableMapTrait;
-use Sbehnfeldt\Webapp\PropelDbEngine\User;
-use Sbehnfeldt\Webapp\PropelDbEngine\UserQuery;
+use Sbehnfeldt\Webapp\PropelDbEngine\Permission;
+use Sbehnfeldt\Webapp\PropelDbEngine\PermissionQuery;
 
 
 /**
- * This class defines the structure of the 'users' table.
+ * This class defines the structure of the 'permissions' table.
  *
  *
  *
@@ -25,7 +25,7 @@ use Sbehnfeldt\Webapp\PropelDbEngine\UserQuery;
  * ORDER BY clause to know whether it needs to apply SQL to make the ORDER BY case-insensitive
  * (i.e. if it's a text column type).
  */
-class UserTableMap extends TableMap
+class PermissionTableMap extends TableMap
 {
     use InstancePoolTrait;
     use TableMapTrait;
@@ -33,7 +33,7 @@ class UserTableMap extends TableMap
     /**
      * The (dot-path) name of this class
      */
-    const CLASS_NAME = '.Map.UserTableMap';
+    const CLASS_NAME = '.Map.PermissionTableMap';
 
     /**
      * The default database name for this class
@@ -43,22 +43,22 @@ class UserTableMap extends TableMap
     /**
      * The table name for this class
      */
-    const TABLE_NAME = 'users';
+    const TABLE_NAME = 'permissions';
 
     /**
      * The related Propel class for this table
      */
-    const OM_CLASS = '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\User';
+    const OM_CLASS = '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\Permission';
 
     /**
      * A class that can be returned by this tableMap
      */
-    const CLASS_DEFAULT = 'User';
+    const CLASS_DEFAULT = 'Permission';
 
     /**
      * The total number of columns
      */
-    const NUM_COLUMNS = 4;
+    const NUM_COLUMNS = 3;
 
     /**
      * The number of lazy-loaded columns
@@ -68,27 +68,22 @@ class UserTableMap extends TableMap
     /**
      * The number of columns to hydrate (NUM_COLUMNS - NUM_LAZY_LOAD_COLUMNS)
      */
-    const NUM_HYDRATE_COLUMNS = 4;
+    const NUM_HYDRATE_COLUMNS = 3;
 
     /**
      * the column name for the id field
      */
-    const COL_ID = 'users.id';
+    const COL_ID = 'permissions.id';
 
     /**
-     * the column name for the username field
+     * the column name for the slug field
      */
-    const COL_USERNAME = 'users.username';
+    const COL_SLUG = 'permissions.slug';
 
     /**
-     * the column name for the password field
+     * the column name for the description field
      */
-    const COL_PASSWORD = 'users.password';
-
-    /**
-     * the column name for the email field
-     */
-    const COL_EMAIL = 'users.email';
+    const COL_DESCRIPTION = 'permissions.description';
 
     /**
      * The default string format for model objects of the related table
@@ -102,11 +97,11 @@ class UserTableMap extends TableMap
      * e.g. self::$fieldNames[self::TYPE_PHPNAME][0] = 'Id'
      */
     protected static $fieldNames = array (
-        self::TYPE_PHPNAME       => array('Id', 'Username', 'Password', 'Email', ),
-        self::TYPE_CAMELNAME     => array('id', 'username', 'password', 'email', ),
-        self::TYPE_COLNAME       => array(UserTableMap::COL_ID, UserTableMap::COL_USERNAME, UserTableMap::COL_PASSWORD, UserTableMap::COL_EMAIL, ),
-        self::TYPE_FIELDNAME     => array('id', 'username', 'password', 'email', ),
-        self::TYPE_NUM           => array(0, 1, 2, 3, )
+        self::TYPE_PHPNAME       => array('Id', 'Slug', 'Description', ),
+        self::TYPE_CAMELNAME     => array('id', 'slug', 'description', ),
+        self::TYPE_COLNAME       => array(PermissionTableMap::COL_ID, PermissionTableMap::COL_SLUG, PermissionTableMap::COL_DESCRIPTION, ),
+        self::TYPE_FIELDNAME     => array('id', 'slug', 'description', ),
+        self::TYPE_NUM           => array(0, 1, 2, )
     );
 
     /**
@@ -116,11 +111,11 @@ class UserTableMap extends TableMap
      * e.g. self::$fieldKeys[self::TYPE_PHPNAME]['Id'] = 0
      */
     protected static $fieldKeys = array (
-        self::TYPE_PHPNAME       => array('Id' => 0, 'Username' => 1, 'Password' => 2, 'Email' => 3, ),
-        self::TYPE_CAMELNAME     => array('id' => 0, 'username' => 1, 'password' => 2, 'email' => 3, ),
-        self::TYPE_COLNAME       => array(UserTableMap::COL_ID => 0, UserTableMap::COL_USERNAME => 1, UserTableMap::COL_PASSWORD => 2, UserTableMap::COL_EMAIL => 3, ),
-        self::TYPE_FIELDNAME     => array('id' => 0, 'username' => 1, 'password' => 2, 'email' => 3, ),
-        self::TYPE_NUM           => array(0, 1, 2, 3, )
+        self::TYPE_PHPNAME       => array('Id' => 0, 'Slug' => 1, 'Description' => 2, ),
+        self::TYPE_CAMELNAME     => array('id' => 0, 'slug' => 1, 'description' => 2, ),
+        self::TYPE_COLNAME       => array(PermissionTableMap::COL_ID => 0, PermissionTableMap::COL_SLUG => 1, PermissionTableMap::COL_DESCRIPTION => 2, ),
+        self::TYPE_FIELDNAME     => array('id' => 0, 'slug' => 1, 'description' => 2, ),
+        self::TYPE_NUM           => array(0, 1, 2, )
     );
 
     /**
@@ -130,33 +125,26 @@ class UserTableMap extends TableMap
      */
     protected $normalizedColumnNameMap = [
         'Id' => 'ID',
-        'User.Id' => 'ID',
+        'Permission.Id' => 'ID',
         'id' => 'ID',
-        'user.id' => 'ID',
-        'UserTableMap::COL_ID' => 'ID',
+        'permission.id' => 'ID',
+        'PermissionTableMap::COL_ID' => 'ID',
         'COL_ID' => 'ID',
-        'users.id' => 'ID',
-        'Username' => 'USERNAME',
-        'User.Username' => 'USERNAME',
-        'username' => 'USERNAME',
-        'user.username' => 'USERNAME',
-        'UserTableMap::COL_USERNAME' => 'USERNAME',
-        'COL_USERNAME' => 'USERNAME',
-        'users.username' => 'USERNAME',
-        'Password' => 'PASSWORD',
-        'User.Password' => 'PASSWORD',
-        'password' => 'PASSWORD',
-        'user.password' => 'PASSWORD',
-        'UserTableMap::COL_PASSWORD' => 'PASSWORD',
-        'COL_PASSWORD' => 'PASSWORD',
-        'users.password' => 'PASSWORD',
-        'Email' => 'EMAIL',
-        'User.Email' => 'EMAIL',
-        'email' => 'EMAIL',
-        'user.email' => 'EMAIL',
-        'UserTableMap::COL_EMAIL' => 'EMAIL',
-        'COL_EMAIL' => 'EMAIL',
-        'users.email' => 'EMAIL',
+        'permissions.id' => 'ID',
+        'Slug' => 'SLUG',
+        'Permission.Slug' => 'SLUG',
+        'slug' => 'SLUG',
+        'permission.slug' => 'SLUG',
+        'PermissionTableMap::COL_SLUG' => 'SLUG',
+        'COL_SLUG' => 'SLUG',
+        'permissions.slug' => 'SLUG',
+        'Description' => 'DESCRIPTION',
+        'Permission.Description' => 'DESCRIPTION',
+        'description' => 'DESCRIPTION',
+        'permission.description' => 'DESCRIPTION',
+        'PermissionTableMap::COL_DESCRIPTION' => 'DESCRIPTION',
+        'COL_DESCRIPTION' => 'DESCRIPTION',
+        'permissions.description' => 'DESCRIPTION',
     ];
 
     /**
@@ -169,17 +157,16 @@ class UserTableMap extends TableMap
     public function initialize()
     {
         // attributes
-        $this->setName('users');
-        $this->setPhpName('User');
+        $this->setName('permissions');
+        $this->setPhpName('Permission');
         $this->setIdentifierQuoting(false);
-        $this->setClassName('\\Sbehnfeldt\\Webapp\\PropelDbEngine\\User');
+        $this->setClassName('\\Sbehnfeldt\\Webapp\\PropelDbEngine\\Permission');
         $this->setPackage('');
         $this->setUseIdGenerator(true);
         // columns
         $this->addPrimaryKey('id', 'Id', 'INTEGER', true, null, null);
-        $this->addColumn('username', 'Username', 'VARCHAR', true, 31, null);
-        $this->addColumn('password', 'Password', 'VARCHAR', true, 63, null);
-        $this->addColumn('email', 'Email', 'VARCHAR', true, 255, null);
+        $this->addColumn('slug', 'Slug', 'VARCHAR', true, 127, null);
+        $this->addColumn('description', 'Description', 'VARCHAR', true, 1023, null);
     } // initialize()
 
     /**
@@ -187,37 +174,22 @@ class UserTableMap extends TableMap
      */
     public function buildRelations()
     {
-        $this->addRelation('LoginAttempt', '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\LoginAttempt', RelationMap::ONE_TO_MANY, array (
-  0 =>
-  array (
-    0 => ':user_id',
-    1 => ':id',
-  ),
-), null, 'NO ACTION', 'LoginAttempts', false);
-        $this->addRelation('TokenAuth', '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\TokenAuth', RelationMap::ONE_TO_MANY, array (
-  0 =>
-  array (
-    0 => ':user_id',
-    1 => ':id',
-  ),
-), 'CASCADE', 'NO ACTION', 'TokenAuths', false);
         $this->addRelation('UserPermission', '\\Sbehnfeldt\\Webapp\\PropelDbEngine\\UserPermission', RelationMap::ONE_TO_MANY, array (
   0 =>
   array (
-    0 => ':user_id',
+    0 => ':permissions_id',
     1 => ':id',
   ),
 ), 'CASCADE', 'NO ACTION', 'UserPermissions', false);
     } // buildRelations()
 
     /**
-     * Method to invalidate the instance pool of all tables related to users     * by a foreign key with ON DELETE CASCADE
+     * Method to invalidate the instance pool of all tables related to permissions     * by a foreign key with ON DELETE CASCADE
      */
     public static function clearRelatedInstancePool()
     {
         // Invalidate objects in related instance pools,
         // since one or more of them may be deleted by ON DELETE CASCADE/SETNULL rule.
-        TokenAuthTableMap::clearInstancePool();
         UserPermissionTableMap::clearInstancePool();
     }
 
@@ -278,7 +250,7 @@ class UserTableMap extends TableMap
      */
     public static function getOMClass($withPrefix = true)
     {
-        return $withPrefix ? UserTableMap::CLASS_DEFAULT : UserTableMap::OM_CLASS;
+        return $withPrefix ? PermissionTableMap::CLASS_DEFAULT : PermissionTableMap::OM_CLASS;
     }
 
     /**
@@ -292,22 +264,22 @@ class UserTableMap extends TableMap
      *
      * @throws PropelException Any exceptions caught during processing will be
      *                         rethrown wrapped into a PropelException.
-     * @return array           (User object, last column rank)
+     * @return array           (Permission object, last column rank)
      */
     public static function populateObject($row, $offset = 0, $indexType = TableMap::TYPE_NUM)
     {
-        $key = UserTableMap::getPrimaryKeyHashFromRow($row, $offset, $indexType);
-        if (null !== ($obj = UserTableMap::getInstanceFromPool($key))) {
+        $key = PermissionTableMap::getPrimaryKeyHashFromRow($row, $offset, $indexType);
+        if (null !== ($obj = PermissionTableMap::getInstanceFromPool($key))) {
             // We no longer rehydrate the object, since this can cause data loss.
             // See http://www.propelorm.org/ticket/509
             // $obj->hydrate($row, $offset, true); // rehydrate
-            $col = $offset + UserTableMap::NUM_HYDRATE_COLUMNS;
+            $col = $offset + PermissionTableMap::NUM_HYDRATE_COLUMNS;
         } else {
-            $cls = UserTableMap::OM_CLASS;
-            /** @var User $obj */
+            $cls = PermissionTableMap::OM_CLASS;
+            /** @var Permission $obj */
             $obj = new $cls();
             $col = $obj->hydrate($row, $offset, false, $indexType);
-            UserTableMap::addInstanceToPool($obj, $key);
+            PermissionTableMap::addInstanceToPool($obj, $key);
         }
 
         return array($obj, $col);
@@ -330,18 +302,18 @@ class UserTableMap extends TableMap
         $cls = static::getOMClass(false);
         // populate the object(s)
         while ($row = $dataFetcher->fetch()) {
-            $key = UserTableMap::getPrimaryKeyHashFromRow($row, 0, $dataFetcher->getIndexType());
-            if (null !== ($obj = UserTableMap::getInstanceFromPool($key))) {
+            $key = PermissionTableMap::getPrimaryKeyHashFromRow($row, 0, $dataFetcher->getIndexType());
+            if (null !== ($obj = PermissionTableMap::getInstanceFromPool($key))) {
                 // We no longer rehydrate the object, since this can cause data loss.
                 // See http://www.propelorm.org/ticket/509
                 // $obj->hydrate($row, 0, true); // rehydrate
                 $results[] = $obj;
             } else {
-                /** @var User $obj */
+                /** @var Permission $obj */
                 $obj = new $cls();
                 $obj->hydrate($row);
                 $results[] = $obj;
-                UserTableMap::addInstanceToPool($obj, $key);
+                PermissionTableMap::addInstanceToPool($obj, $key);
             } // if key exists
         }
 
@@ -362,15 +334,13 @@ class UserTableMap extends TableMap
     public static function addSelectColumns(Criteria $criteria, $alias = null)
     {
         if (null === $alias) {
-            $criteria->addSelectColumn(UserTableMap::COL_ID);
-            $criteria->addSelectColumn(UserTableMap::COL_USERNAME);
-            $criteria->addSelectColumn(UserTableMap::COL_PASSWORD);
-            $criteria->addSelectColumn(UserTableMap::COL_EMAIL);
+            $criteria->addSelectColumn(PermissionTableMap::COL_ID);
+            $criteria->addSelectColumn(PermissionTableMap::COL_SLUG);
+            $criteria->addSelectColumn(PermissionTableMap::COL_DESCRIPTION);
         } else {
             $criteria->addSelectColumn($alias . '.id');
-            $criteria->addSelectColumn($alias . '.username');
-            $criteria->addSelectColumn($alias . '.password');
-            $criteria->addSelectColumn($alias . '.email');
+            $criteria->addSelectColumn($alias . '.slug');
+            $criteria->addSelectColumn($alias . '.description');
         }
     }
 
@@ -388,15 +358,13 @@ class UserTableMap extends TableMap
     public static function removeSelectColumns(Criteria $criteria, $alias = null)
     {
         if (null === $alias) {
-            $criteria->removeSelectColumn(UserTableMap::COL_ID);
-            $criteria->removeSelectColumn(UserTableMap::COL_USERNAME);
-            $criteria->removeSelectColumn(UserTableMap::COL_PASSWORD);
-            $criteria->removeSelectColumn(UserTableMap::COL_EMAIL);
+            $criteria->removeSelectColumn(PermissionTableMap::COL_ID);
+            $criteria->removeSelectColumn(PermissionTableMap::COL_SLUG);
+            $criteria->removeSelectColumn(PermissionTableMap::COL_DESCRIPTION);
         } else {
             $criteria->removeSelectColumn($alias . '.id');
-            $criteria->removeSelectColumn($alias . '.username');
-            $criteria->removeSelectColumn($alias . '.password');
-            $criteria->removeSelectColumn($alias . '.email');
+            $criteria->removeSelectColumn($alias . '.slug');
+            $criteria->removeSelectColumn($alias . '.description');
         }
     }
 
@@ -409,13 +377,13 @@ class UserTableMap extends TableMap
      */
     public static function getTableMap()
     {
-        return Propel::getServiceContainer()->getDatabaseMap(UserTableMap::DATABASE_NAME)->getTable(UserTableMap::TABLE_NAME);
+        return Propel::getServiceContainer()->getDatabaseMap(PermissionTableMap::DATABASE_NAME)->getTable(PermissionTableMap::TABLE_NAME);
     }
 
     /**
-     * Performs a DELETE on the database, given a User or Criteria object OR a primary key value.
+     * Performs a DELETE on the database, given a Permission or Criteria object OR a primary key value.
      *
-     * @param mixed               $values Criteria or User object or primary key or array of primary keys
+     * @param mixed               $values Criteria or Permission object or primary key or array of primary keys
      *              which is used to create the DELETE statement
      * @param  ConnectionInterface $con the connection to use
      * @return int             The number of affected rows (if supported by underlying database driver).  This includes CASCADE-related rows
@@ -426,27 +394,27 @@ class UserTableMap extends TableMap
      public static function doDelete($values, ConnectionInterface $con = null)
      {
         if (null === $con) {
-            $con = Propel::getServiceContainer()->getWriteConnection(UserTableMap::DATABASE_NAME);
+            $con = Propel::getServiceContainer()->getWriteConnection(PermissionTableMap::DATABASE_NAME);
         }
 
         if ($values instanceof Criteria) {
             // rename for clarity
             $criteria = $values;
-        } elseif ($values instanceof \Sbehnfeldt\Webapp\PropelDbEngine\User) { // it's a model object
+        } elseif ($values instanceof \Sbehnfeldt\Webapp\PropelDbEngine\Permission) { // it's a model object
             // create criteria based on pk values
             $criteria = $values->buildPkeyCriteria();
         } else { // it's a primary key, or an array of pks
-            $criteria = new Criteria(UserTableMap::DATABASE_NAME);
-            $criteria->add(UserTableMap::COL_ID, (array) $values, Criteria::IN);
+            $criteria = new Criteria(PermissionTableMap::DATABASE_NAME);
+            $criteria->add(PermissionTableMap::COL_ID, (array) $values, Criteria::IN);
         }
 
-        $query = UserQuery::create()->mergeWith($criteria);
+        $query = PermissionQuery::create()->mergeWith($criteria);
 
         if ($values instanceof Criteria) {
-            UserTableMap::clearInstancePool();
+            PermissionTableMap::clearInstancePool();
         } elseif (!is_object($values)) { // it's a primary key, or an array of pks
             foreach ((array) $values as $singleval) {
-                UserTableMap::removeInstanceFromPool($singleval);
+                PermissionTableMap::removeInstanceFromPool($singleval);
             }
         }
 
@@ -454,20 +422,20 @@ class UserTableMap extends TableMap
     }
 
     /**
-     * Deletes all rows from the users table.
+     * Deletes all rows from the permissions table.
      *
      * @param ConnectionInterface $con the connection to use
      * @return int The number of affected rows (if supported by underlying database driver).
      */
     public static function doDeleteAll(ConnectionInterface $con = null)
     {
-        return UserQuery::create()->doDeleteAll($con);
+        return PermissionQuery::create()->doDeleteAll($con);
     }
 
     /**
-     * Performs an INSERT on the database, given a User or Criteria object.
+     * Performs an INSERT on the database, given a Permission or Criteria object.
      *
-     * @param mixed               $criteria Criteria or User object containing data that is used to create the INSERT statement.
+     * @param mixed               $criteria Criteria or Permission object containing data that is used to create the INSERT statement.
      * @param ConnectionInterface $con the ConnectionInterface connection to use
      * @return mixed           The new primary key.
      * @throws PropelException Any exceptions caught during processing will be
@@ -476,22 +444,22 @@ class UserTableMap extends TableMap
     public static function doInsert($criteria, ConnectionInterface $con = null)
     {
         if (null === $con) {
-            $con = Propel::getServiceContainer()->getWriteConnection(UserTableMap::DATABASE_NAME);
+            $con = Propel::getServiceContainer()->getWriteConnection(PermissionTableMap::DATABASE_NAME);
         }
 
         if ($criteria instanceof Criteria) {
             $criteria = clone $criteria; // rename for clarity
         } else {
-            $criteria = $criteria->buildCriteria(); // build Criteria from User object
+            $criteria = $criteria->buildCriteria(); // build Criteria from Permission object
         }
 
-        if ($criteria->containsKey(UserTableMap::COL_ID) && $criteria->keyContainsValue(UserTableMap::COL_ID) ) {
-            throw new PropelException('Cannot insert a value for auto-increment primary key ('.UserTableMap::COL_ID.')');
+        if ($criteria->containsKey(PermissionTableMap::COL_ID) && $criteria->keyContainsValue(PermissionTableMap::COL_ID) ) {
+            throw new PropelException('Cannot insert a value for auto-increment primary key ('.PermissionTableMap::COL_ID.')');
         }
 
 
         // Set the correct dbName
-        $query = UserQuery::create()->mergeWith($criteria);
+        $query = PermissionQuery::create()->mergeWith($criteria);
 
         // use transaction because $criteria could contain info
         // for more than one table (I guess, conceivably)
@@ -500,4 +468,4 @@ class UserTableMap extends TableMap
         });
     }
 
-} // UserTableMap
+} // PermissionTableMap

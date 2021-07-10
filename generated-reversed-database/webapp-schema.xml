@@ -21,6 +21,17 @@
       <parameter name="Engine" value="InnoDB"/>
     </vendor>
   </table>
+  <table name="permissions" idMethod="native" phpName="Permission">
+    <column name="id" phpName="Id" type="INTEGER" primaryKey="true" autoIncrement="true" required="true"/>
+    <column name="slug" phpName="Slug" type="VARCHAR" size="127" required="true"/>
+    <column name="description" phpName="Description" type="VARCHAR" size="1023" required="true"/>
+    <unique name="slug">
+      <unique-column name="slug"/>
+    </unique>
+    <vendor type="mysql">
+      <parameter name="Engine" value="InnoDB"/>
+    </vendor>
+  </table>
   <table name="token_auths" idMethod="native" phpName="TokenAuth">
     <column name="id" phpName="Id" type="INTEGER" primaryKey="true" autoIncrement="true" required="true"/>
     <column name="cookie_hash" phpName="CookieHash" type="VARCHAR" size="255" required="true"/>
@@ -31,6 +42,26 @@
     </foreign-key>
     <index name="user_id">
       <index-column name="user_id"/>
+    </index>
+    <vendor type="mysql">
+      <parameter name="Engine" value="InnoDB"/>
+    </vendor>
+  </table>
+  <table name="user_permissions" idMethod="native" phpName="UserPermission">
+    <column name="id" phpName="Id" type="INTEGER" primaryKey="true" autoIncrement="true" required="true"/>
+    <column name="user_id" phpName="UserId" type="INTEGER" required="true"/>
+    <column name="permissions_id" phpName="PermissionsId" type="INTEGER" required="true"/>
+    <foreign-key foreignTable="users" name="user_permissions_ibfk_1" onDelete="CASCADE" onUpdate="NO ACTION">
+      <reference local="user_id" foreign="id"/>
+    </foreign-key>
+    <foreign-key foreignTable="permissions" name="user_permissions_ibfk_2" onDelete="CASCADE" onUpdate="NO ACTION">
+      <reference local="permissions_id" foreign="id"/>
+    </foreign-key>
+    <index name="user_id">
+      <index-column name="user_id"/>
+    </index>
+    <index name="permissions_id">
+      <index-column name="permissions_id"/>
     </index>
     <vendor type="mysql">
       <parameter name="Engine" value="InnoDB"/>
