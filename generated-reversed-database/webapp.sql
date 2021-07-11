@@ -4,6 +4,47 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ---------------------------------------------------------------------
+-- group_members
+-- ---------------------------------------------------------------------
+
+DROP TABLE IF EXISTS `group_members`;
+
+CREATE TABLE `group_members`
+(
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `group_id` INTEGER NOT NULL,
+    `user_id` INTEGER NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE INDEX `group_id` (`group_id`, `user_id`),
+    INDEX `user_id` (`user_id`),
+    CONSTRAINT `group_members_ibfk_1`
+        FOREIGN KEY (`group_id`)
+        REFERENCES `groups` (`id`)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE,
+    CONSTRAINT `group_members_ibfk_2`
+        FOREIGN KEY (`user_id`)
+        REFERENCES `groups` (`id`)
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
+-- groups
+-- ---------------------------------------------------------------------
+
+DROP TABLE IF EXISTS `groups`;
+
+CREATE TABLE `groups`
+(
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `groupname` VARCHAR(63) NOT NULL,
+    `description` VARCHAR(255) NOT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE INDEX `groupname` (`groupname`)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- login_attempts
 -- ---------------------------------------------------------------------
 

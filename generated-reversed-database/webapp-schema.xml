@@ -1,5 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <database name="webapp" defaultIdMethod="native" namespace="\Sbehnfeldt\Webapp\PropelDbEngine" defaultPhpNamingMethod="underscore">
+  <table name="group_members" idMethod="native" phpName="GroupMember">
+    <column name="id" phpName="Id" type="INTEGER" primaryKey="true" autoIncrement="true" required="true"/>
+    <column name="group_id" phpName="GroupId" type="INTEGER" required="true"/>
+    <column name="user_id" phpName="UserId" type="INTEGER" required="true"/>
+    <foreign-key foreignTable="groups" name="group_members_ibfk_1" onDelete="CASCADE" onUpdate="NO ACTION">
+      <reference local="group_id" foreign="id"/>
+    </foreign-key>
+    <foreign-key foreignTable="groups" name="group_members_ibfk_2" onDelete="CASCADE" onUpdate="NO ACTION">
+      <reference local="user_id" foreign="id"/>
+    </foreign-key>
+    <index name="user_id">
+      <index-column name="user_id"/>
+    </index>
+    <unique name="group_id">
+      <unique-column name="group_id"/>
+      <unique-column name="user_id"/>
+    </unique>
+    <vendor type="mysql">
+      <parameter name="Engine" value="InnoDB"/>
+    </vendor>
+  </table>
+  <table name="groups" idMethod="native" phpName="Group">
+    <column name="id" phpName="Id" type="INTEGER" primaryKey="true" autoIncrement="true" required="true"/>
+    <column name="groupname" phpName="Groupname" type="VARCHAR" size="63" required="true"/>
+    <column name="description" phpName="Description" type="VARCHAR" size="255" required="true"/>
+    <unique name="groupname">
+      <unique-column name="groupname"/>
+    </unique>
+    <vendor type="mysql">
+      <parameter name="Engine" value="InnoDB"/>
+    </vendor>
+  </table>
   <table name="login_attempts" idMethod="native" phpName="LoginAttempt">
     <column name="id" phpName="Id" type="INTEGER" primaryKey="true" autoIncrement="true" required="true"/>
     <column name="username" phpName="Username" type="VARCHAR" size="63" required="true" defaultValue=""/>
