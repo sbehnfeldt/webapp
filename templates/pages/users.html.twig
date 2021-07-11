@@ -1,3 +1,14 @@
 {% extends 'partials/base.html.twig' %}
 
-{% block main %}<h1>Users</h1>{% endblock %}
+{% block main %}<h1>Users</h1>
+
+    <section>
+
+
+    <ul class="selectable">
+        {% for user in users %}
+            <li><a href="javascript:void(0)">{{ user.Username }}</a></li>
+        {% endfor %}
+    </ul>
+    </section>
+{% endblock %}
