@@ -1,36 +1,60 @@
 ;(function (global, $) {
     'use strict';
 
-    // Document ready handler
-    $(function () {
-        console.log('Document ready');
-        let $list = $('#users-list');
+
+    let UsersList = (function(selector) {
+        let $list = $(selector);
+
         $list.on('click', 'li', function() {
             console.log($(this).data('user'));
         });
 
-        $.ajax({
-            url: '/api/users',
-            type: 'get',
+        function load() {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url: '/api/users',
+                    type: 'get',
 
-            dataType: 'json',
-            success: function(json) {
-                console.log(json);
-                let template = Handlebars.compile( '<li><a href="javascript:void(0)">{{ username }}</a>');
+                    dataType: 'json',
+                    success: function(json) {
+                        resolve(json);
+                    },
+                    error: (xhr) => {
+                        reject(xhr);
+                    }
+                });
 
-                for ( let i = 0; i < json.length; i++ ) {
-                    let user = json[i];
-                    let $li = $(template({
-                        'username' : user.Username
-                    }));
-                    $li.data( 'user', user );
-                    $list.append($li);
-                }
-            },
-            error: (xhr) => {
-                console.log(xhr);
-                alert("Error");
+            });
+        }
+
+        function populate(users) {
+            console.log(users);
+            let template = Handlebars.compile( '<li><a href="javascript:void(0)">{{ username }}</a>');
+
+            for ( let i = 0; i < users.length; i++ ) {
+                let user = users[i];
+                let $li = $(template({
+                    'username' : user.Username
+                }));
+                $li.data( 'user', user );
+                $list.append($li);
             }
-        });
+        }
+
+        return {load, populate};
+    })( '#users-list');
+
+
+
+    // Document ready handler
+    $(function () {
+        console.log('Document ready');
+        UsersList.load()
+            .then((json) => {
+                UsersList.populate(json)
+            })
+            .catch((xhr) => {
+                console.log(xhr)
+            });
     });
 })(this, jQuery);
