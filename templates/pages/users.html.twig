@@ -1,14 +1,13 @@
 {% extends 'partials/base.html.twig' %}
 
+{% block scripts %}
+    {{ parent() }}
+    <script defer src="js/users.js"></script>
+{% endblock %}
+
 {% block main %}<h1>Users</h1>
 
     <section>
-
-
-    <ul class="selectable">
-        {% for user in users %}
-            <li><a href="javascript:void(0)">{{ user.Username }}</a></li>
-        {% endfor %}
-    </ul>
+        <ul id="users-list" class="selectable"></ul>
     </section>
 {% endblock %}
