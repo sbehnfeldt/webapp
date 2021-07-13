@@ -7,6 +7,7 @@
 
         $list.on('click', 'li', function() {
             console.log($(this).data('user'));
+            UserForm.populate($(this).data('user'));
         });
 
         function load() {
@@ -43,6 +44,18 @@
 
         return {load, populate};
     })( '#users-list');
+
+    let UserForm = (function(selector) {
+        let $form = $(selector);
+
+        function populate(user) {
+            $form.find('input[name=Username]').val(user.Username);
+            $form.find('input[name=Email]').val(user.Email);
+        }
+
+        return {populate};
+
+    })('#users-form');
 
 
 

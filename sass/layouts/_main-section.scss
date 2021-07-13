@@ -1,0 +1,10 @@
+div.main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: row;
+
+  & section {
+    flex: 1 0 25%;
+  }
+
+}
