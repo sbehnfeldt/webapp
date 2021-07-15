@@ -9,6 +9,7 @@ use Propel\Runtime\ActiveQuery\Criteria;
 use Sbehnfeldt\Webapp\PropelDbEngine\Base\UserPermissionQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt;
 use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttemptQuery;
+use Sbehnfeldt\Webapp\PropelDbEngine\PermissionQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuth;
 use Sbehnfeldt\Webapp\PropelDbEngine\TokenAuthQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\User;
@@ -379,11 +380,13 @@ class WebApp extends App
                 $resp = $resp->withStatus(401);
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::HTTP_401, []));
             } else {
-                $perms = $user->getAllPerms();
+                $allPerms = PermissionQuery::create()->find();
+                $userPerms = $user->getAllPerms();
                 $users = UserQuery::create()->find()->toArray();
 
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_USERS, [
-                    'perms' => $perms,
+                    'allPerms' => $allPerms,
+                    'myPerms' => $userPerms,
                     'users' => $users
                 ]));
             }

@@ -1,0 +1,17 @@
+div.main-users {
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: row;
+
+  & section.users-list {
+    flex: 0 0 25%;
+  }
+
+  & section.users-form {
+    flex: 1;
+
+    & button#new-user {
+    }
+  }
+}
