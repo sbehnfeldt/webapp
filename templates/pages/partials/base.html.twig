@@ -10,6 +10,7 @@
     {% block scripts %}
         <script defer src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
         <script defer src="https://cdn.jsdelivr.net/npm/handlebars@latest/dist/handlebars.js"></script>
+        <script defer src="/js/webapp.js"></script>
     {% endblock %}
     <title>{{ title }}</title>
 </head>
@@ -17,19 +18,23 @@
 <header>
     <nav>
         <ul class="page-nav">
-            {% if 'PAGE_HOME' in perms %}<li><a href="/">Home</a></li>{% endif %}
-            {% if 'PAGE_REPORTS' in perms %}<li><a href="/reports">Reports</a></li>{% endif %}
-            {% if 'PAGE_USERS' in perms  %}<li><a href="/users">Users</a></li>{% endif %}
-            {% if 'PAGE_SECURITY' in perms %}<li><a href="/security">Security</a></li>{% endif %}
-            {% if 'PAGE_ADMIN' in perms %}<li><a href="/admin">Admin</a></li>{% endif %}
+            {% if 'PAGE_HOME' in myPerms %}<li><a href="/">Home</a></li>{% endif %}
+            {% if 'PAGE_REPORTS' in myPerms %}<li><a href="/reports">Reports</a></li>{% endif %}
+            {% if 'PAGE_USERS' in myPerms  %}<li><a href="/users">Users</a></li>{% endif %}
+            {% if 'PAGE_SECURITY' in myPerms %}<li><a href="/security">Security</a></li>{% endif %}
+            {% if 'PAGE_ADMIN' in myPerms %}<li><a href="/admin">Admin</a></li>{% endif %}
         </ul>
         <ul class="profile-nav">
-            {% if 'PAGE_PROFILE' in perms %}<li><a href="/profile">Profile</a></li>{% endif %}
+            {% if 'PAGE_PROFILE' in myPerms %}<li><a href="/profile">Profile</a></li>{% endif %}
             <li><a href="/logout">Logout</a></li>
         </ul>
     </nav>
 </header>
 <main>
+    <div id="loading">
+        <div id="loading-image"></div>
+    </div>
+
     {% block main %}<h1>Main</h1>{% endblock %}
 </main>
 <footer></footer>

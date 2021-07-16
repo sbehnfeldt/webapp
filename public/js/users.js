@@ -62,12 +62,16 @@
     // Document ready handler
     $(function () {
         console.log('Document ready');
+        Webapp.Spinner.init('#loading');
+        Webapp.Spinner.loadAnother()
         UsersList.load()
             .then((json) => {
                 UsersList.populate(json)
+                Webapp.Spinner.doneLoading();
             })
             .catch((xhr) => {
                 console.log(xhr)
+                Webapp.doneLoading();
             });
     });
 })(this, jQuery);
