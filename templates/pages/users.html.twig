@@ -29,7 +29,7 @@
 
                 {% for perm in allPerms %}
                     <div>
-                    <input type="checkbox" name="{{ perm.Slug }}" {% if perm.Slug in myPerms %}checked{% endif %} disabled>
+                    <input type="checkbox" name="{{ perm.Slug }}" disabled>
                     <label for="">{{ perm.Description }}</label>
                     </div>
                 {% endfor %}

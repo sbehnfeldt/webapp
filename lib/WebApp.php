@@ -385,12 +385,10 @@ class WebApp extends App
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::HTTP_401, []));
             } else {
                 $allPerms = PermissionQuery::create()->find();
-                $userPerms = $user->getAllPerms();
                 $users = UserQuery::create()->find()->toArray();
 
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_USERS, [
                     'allPerms' => $allPerms,
-                    'myPerms' => $userPerms,
                     'users' => $users
                 ]));
             }

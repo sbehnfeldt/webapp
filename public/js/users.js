@@ -23,8 +23,19 @@
         let $list = $(selector);
 
         $list.on('click', 'li', function () {
-            console.log($(this).data('user'));
-            UserForm.populate($(this).data('user'));
+            let user = $(this).data('user');
+            console.log(user);
+
+            loadPermissions(user.Id)
+                .then((perms) => {
+                    console.log(perms);
+                    UserForm.enable(true)
+                        .populate(user)
+                        .populatePermissions(perms);
+                })
+                .catch((xhr) => {
+                    console.log(xhr);
+                });
         });
 
         function load() {
@@ -42,6 +53,26 @@
                     }
                 });
 
+            });
+        }
+
+        function loadPermissions(userId) {
+            return new Promise((resolve, reject) => {
+                $.ajax({
+                    url : '/api/permissions',
+                    type: 'get',
+                    data: {
+                        userId : userId
+                    },
+
+                    dataType: 'json',
+                    success: (permissions) => {
+                        resolve(permissions);
+                    },
+                    error: (xhr) => {
+                        reject(xhr);
+                    }
+                })
             });
         }
 
@@ -71,11 +102,23 @@
         function enable(b = true) {
             $textBoxes.attr('disabled', !b);
             $checkBoxes.attr('disabled', !b);
+            return this;
         }
 
         function populate(user) {
             $form.find('input[name=Username]').val(user.Username);
             $form.find('input[name=Email]').val(user.Email);
+            return this;
+        }
+
+        function populatePermissions(perms) {
+            $checkBoxes.attr('checked', false );
+            for ( let i = 0; i < perms.length; i++ ) {
+                let p = perms[i].Permission;
+                let $checkbox = $checkBoxes.filter(`[name=${p.Slug}]`);
+                $checkbox.attr('checked', true);
+            }
+            return this;
         }
 
         function getUser() {
@@ -86,7 +129,7 @@
         }
 
 
-        return {enable, populate, getUser};
+        return {enable, populate, populatePermissions, getUser};
 
     })('#users-form');
 
