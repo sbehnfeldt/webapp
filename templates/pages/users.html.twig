@@ -14,27 +14,27 @@
 
         <section class="users-form">
             <div style="text-align: right">
-                <button id="new-user" disabled>New</button>
+                <button id="new-user-button" disabled>New</button>
             </div>
             <form action="" id="users-form">
                 <div class="form-box">
                     <label for="">Name </label>
-                    <input type="text" name="Username">
+                    <input type="text" name="Username" disabled>
                 </div>
                 <div class="form-box">
                     <label for="">Email </label>
-                    <input type="email" name="Email">
+                    <input type="email" name="Email" disabled>
                 </div>
                 <hr>
 
                 {% for perm in allPerms %}
                     <div>
-                    <input type="checkbox" name="{{ perm.Slug }}" {% if perm.Slug in myPerms %}checked{% endif %}>
+                    <input type="checkbox" name="{{ perm.Slug }}" {% if perm.Slug in myPerms %}checked{% endif %} disabled>
                     <label for="">{{ perm.Description }}</label>
                     </div>
                 {% endfor %}
                 <div class="form-box">
-                    <button name="saveButton" disabled>Save</button>
+                    <button id="save-user-button" name="saveButton" disabled>Save</button>
                 </div>
             </form>
         </section>

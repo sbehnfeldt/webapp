@@ -2,10 +2,27 @@
     'use strict';
 
 
-    let UsersList = (function(selector) {
+    let NewUserButton = (function (selector) {
+        let $button = $(selector);
+
+        $button.on('click', function () {
+            UserForm.enable(true);
+            SaveUserButton.enable(true);
+            enable(false);
+        });
+
+        function enable(b = true) {
+            $button.attr('disabled', !b);
+        }
+
+        return {enable};
+    })('#new-user-button');
+
+
+    let UsersList = (function (selector) {
         let $list = $(selector);
 
-        $list.on('click', 'li', function() {
+        $list.on('click', 'li', function () {
             console.log($(this).data('user'));
             UserForm.populate($(this).data('user'));
         });
@@ -17,7 +34,7 @@
                     type: 'get',
 
                     dataType: 'json',
-                    success: function(json) {
+                    success: function (json) {
                         resolve(json);
                     },
                     error: (xhr) => {
@@ -30,34 +47,58 @@
 
         function populate(users) {
             console.log(users);
-            let template = Handlebars.compile( '<li><a href="javascript:void(0)">{{ username }}</a>');
+            let template = Handlebars.compile('<li><a href="javascript:void(0)">{{ username }}</a>');
 
-            for ( let i = 0; i < users.length; i++ ) {
+            for (let i = 0; i < users.length; i++) {
                 let user = users[i];
                 let $li = $(template({
-                    'username' : user.Username
+                    'username': user.Username
                 }));
-                $li.data( 'user', user );
+                $li.data('user', user);
                 $list.append($li);
             }
         }
 
         return {load, populate};
-    })( '#users-list');
+    })('#users-list');
 
-    let UserForm = (function(selector) {
+
+    let UserForm = (function (selector) {
         let $form = $(selector);
+        let $textBoxes = $form.find('input[type=text], input[type=email]');
+        let $checkBoxes = $form.find('input[type=checkbox]');
+
+        function enable(b = true) {
+            $textBoxes.attr('disabled', !b);
+            $checkBoxes.attr('disabled', !b);
+        }
 
         function populate(user) {
             $form.find('input[name=Username]').val(user.Username);
             $form.find('input[name=Email]').val(user.Email);
         }
 
-        return {populate};
+        return {enable, populate};
 
     })('#users-form');
 
 
+    let SaveUserButton = (function (selector) {
+        let $button = $(selector);
+
+        $button.on('click', function () {
+            enable(false);
+            UserForm.enable(false);
+            NewUserButton.enable(true);
+        });
+
+        function enable(b = true) {
+            $button.attr('disabled', !b);
+        }
+
+        return {enable};
+
+    })("#save-user-button");
 
     // Document ready handler
     $(function () {
@@ -73,5 +114,7 @@
                 console.log(xhr)
                 Webapp.doneLoading();
             });
+
+        NewUserButton.enable();
     });
 })(this, jQuery);
