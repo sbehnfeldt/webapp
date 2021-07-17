@@ -78,7 +78,15 @@
             $form.find('input[name=Email]').val(user.Email);
         }
 
-        return {enable, populate};
+        function getUser() {
+            return {
+                'Username' : $form.find('input[name=Username]').val(),
+                'Email' : $form.find('input[name=Email').val()
+            };
+        }
+
+
+        return {enable, populate, getUser};
 
     })('#users-form');
 
@@ -88,17 +96,50 @@
 
         $button.on('click', function () {
             enable(false);
-            UserForm.enable(false);
-            NewUserButton.enable(true);
+            let user = UserForm.getUser();
+            Webapp.Spinner.loadAnother();
+            save(user)
+                .then((user) => {
+                    console.log(user);
+                    UserForm.enable(false);
+                    NewUserButton.enable(true);
+                    Webapp.Spinner.doneLoading();
+                })
+                .catch((xhr) => {
+                    console.log(xhr);
+                    UserForm.enable(false);
+                    NewUserButton.enable(true);
+                    Webapp.Spinner.doneLoading();
+                });
         });
 
         function enable(b = true) {
             $button.attr('disabled', !b);
         }
 
-        return {enable};
 
+        function save(user) {
+            return new Promise((resolve, reject) => {
+
+                $.ajax({
+                    url: '/api/users',
+                    type: 'post',
+                    data: user,
+
+                    dataType: 'json',
+                    success: function(user) {
+                        resolve(user);
+                    },
+                    error: function(xhr) {
+                        reject(xhr);
+                    }
+                });
+            });
+        }
+
+        return {enable};
     })("#save-user-button");
+
 
     // Document ready handler
     $(function () {

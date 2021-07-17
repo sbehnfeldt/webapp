@@ -70,17 +70,36 @@ class ApiApp extends App
 
     public function run($silent = false)
     {
-        $this->get('/api/', function (Request $req, Response $resp, array $args) use ($web) {
+        $api = $this;
+
+        $this->get('/api/', function (Request $req, Response $resp, array $args) use ($api) {
             $resp->getBody()->write('ok');
             return $resp;
         });
 
 
-        $this->get('/api/users', function (Request $req, Response $resp, array $args) use ($web) {
+        // Get all users
+        $this->get('/api/users', function (Request $req, Response $resp, array $args) use ($api) {
             $users = UserQuery::create()->find();
             $users = $users->toArray();
             $users = json_encode($users);
             $resp->getBody()->write($users);
+            return $resp;
+        });
+
+        // Create new user
+        $this->post('/api/users', function (Request $req, Response $resp, array $args) use ($api) {
+            $user = new User();
+            $user->setUsername($_POST[ 'Username']);
+            $user->setEmail($_POST[ 'Email' ]);
+            $user->setPassword( password_hash('password', PASSWORD_DEFAULT ));
+            $b = $user->save();
+            $user = $user->toArray();
+            $user = json_encode($user);
+
+            $resp = $resp->withStatus(201, 'Created');
+            $resp = $resp->withHeader('Content-Type', 'application/json');
+            $resp->getBody()->write( $user);
             return $resp;
         });
 
