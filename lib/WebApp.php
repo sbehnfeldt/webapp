@@ -348,11 +348,9 @@ class WebApp extends App
                 $resp = $resp->withStatus(401);
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::HTTP_401, []));
             } else {
-                $allPerms = PermissionQuery::create()->find();
-                $userPerms = $user->getAllPerms();
+                $myPerms = $user->getAllPerms();
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_INDEX, [
-                    'allPerms' => $allPerms,
-                    'myPerms' => $userPerms,
+                    'myPerms' => $myPerms,
                 ]));
             }
             return $resp;
@@ -366,11 +364,9 @@ class WebApp extends App
                 $resp = $resp->withStatus(401);
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::HTTP_401, []));
             } else {
-                $allPerms = PermissionQuery::create()->find();
-                $userPerms = $user->getAllPerms();
+                $myPerms = $user->getAllPerms();
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_REPORTS, [
-                    'allPerms' => $allPerms,
-                    'myPerms' => $userPerms,
+                    'myPerms' => $myPerms,
                 ]));
             }
             return $resp;
@@ -384,11 +380,13 @@ class WebApp extends App
                 $resp = $resp->withStatus(401);
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::HTTP_401, []));
             } else {
+                $myPerms = $user->getAllPerms();
                 $allPerms = PermissionQuery::create()->find();
                 $users = UserQuery::create()->find()->toArray();
 
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_USERS, [
                     'allPerms' => $allPerms,
+                    'myPerms' => $myPerms,
                     'users' => $users
                 ]));
             }
@@ -403,11 +401,9 @@ class WebApp extends App
                 $resp = $resp->withStatus(401);
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::HTTP_401, []));
             } else {
-                $allPerms = PermissionQuery::create()->find();
-                $userPerms = $user->getAllPerms();
+                $myPerms = $user->getAllPerms();
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_SECURITY, [
-                    'allPerms' => $allPerms,
-                    'myPerms' => $userPerms,
+                    'myPerms' => $myPerms,
                 ]));
             }
             return $resp;
@@ -421,11 +417,9 @@ class WebApp extends App
                 $resp = $resp->withStatus(401);
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::HTTP_401, []));
             } else {
-                $allPerms = PermissionQuery::create()->find();
-                $userPerms = $user->getAllPerms();
+                $myPerms = $user->getAllPerms();
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_ADMIN, [
-                    'allPerms' => $allPerms,
-                    'myPerms' => $userPerms,
+                    'myPerms' => $myPerms,
                 ]));
             }
             return $resp;
@@ -439,11 +433,9 @@ class WebApp extends App
                 $resp = $resp->withStatus(401);
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::HTTP_401, []));
             } else {
-                $allPerms = PermissionQuery::create()->find();
-                $userPerms = $user->getAllPerms();
+                $myPerms = $user->getAllPerms();
                 $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_PROFILE, [
-                    'allPerms' => $allPerms,
-                    'myPerms' => $userPerms,
+                    'myPerms' => $myPerms,
                 ]));
             }
             return $resp;
