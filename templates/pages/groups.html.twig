@@ -1,15 +1,16 @@
 {% extends 'partials/base.html.twig' %}
 
+{% block scripts %}
+    {{ parent() }}
+    <script defer src="js/groups.js"></script>
+{% endblock %}
+
 {% block main %}
     <h1>Groups</h1>
     <div class="main list-details">
         <section class="list groups-list">
             <h2>Groups</h2>
-            <ul id="groups-list" class="selectable">
-                {% for g in groups %}
-                    <li><a href="javascript:void(0)">{{ g.Groupname }}</a></li>
-                {% endfor %}
-            </ul>
+            <ul id="groups-list" class="selectable"></ul>
         </section>
         <section class="details groups-form">
             <div style="text-align: right">
