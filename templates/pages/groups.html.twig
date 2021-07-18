@@ -1,0 +1,34 @@
+{% extends 'partials/base.html.twig' %}
+
+{% block main %}
+    <h1>Groups</h1>
+    <div class="main list-details">
+        <section class="list groups-list">
+            <h2>Groups</h2>
+            <ul id="groups-list" class="selectable">
+                {% for g in groups %}
+                    <li><a href="javascript:void(0)">{{ g.Groupname }}</a></li>
+                {% endfor %}
+            </ul>
+        </section>
+        <section class="details groups-form">
+            <div style="text-align: right">
+                <button id="new-group-button" disabled>New</button>
+            </div>
+            <form action="" id="groups-form">
+                <div class="form-box">
+                    <label for="">Name</label>
+                    <input type="text" name="Groupname" disabled>
+                </div>
+                <div class="form-box">
+                    <label for="">Description</label>
+                    <input type="text" name="Description" disabled>
+                </div>
+                <div class="form-box">
+                    <button id="save-group-button" type="submit" disabled>Save</button>
+                    <button id="cancel-group-form" type="reset" disabled>Cancel</button>
+                </div>
+            </form>
+        </section>
+    </div>
+{% endblock %}

@@ -1,0 +1,15 @@
+div.list-details {
+
+  min-height: 100vh;
+  display: flex;
+  flex-direction: row;
+
+  & section.list {
+    flex: 0 0 25%;
+  }
+
+  & section.details {
+    flex: 1;
+
+  }
+}

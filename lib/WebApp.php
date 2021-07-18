@@ -7,6 +7,7 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Sbehnfeldt\Webapp\PropelDbEngine\Base\UserPermissionQuery;
+use Sbehnfeldt\Webapp\PropelDbEngine\GroupQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttempt;
 use Sbehnfeldt\Webapp\PropelDbEngine\LoginAttemptQuery;
 use Sbehnfeldt\Webapp\PropelDbEngine\PermissionQuery;
@@ -388,6 +389,24 @@ class WebApp extends App
                     'allPerms' => $allPerms,
                     'myPerms' => $myPerms,
                     'users' => $users
+                ]));
+            }
+            return $resp;
+        })->add($isAuthenticated);
+
+        $this->get('/groups', function (Request $req, Response $resp, array $args) use ($web) {
+            /** @var User $user */
+            $user = $_SESSION['user'];
+            if (!$user->hasPermission('PAGE_GROUPS')) {
+                $resp = $resp->withStatus(401);
+                $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::HTTP_401, []));
+            } else {
+                $myPerms = $user->getAllPerms();
+                $groups = GroupQuery::create()->find();
+
+                $resp->getBody()->write($web->getRenderer()->render(IPageRenderer::PAGE_GROUPS, [
+                    'myPerms' => $myPerms,
+                    'groups' => $groups
                 ]));
             }
             return $resp;

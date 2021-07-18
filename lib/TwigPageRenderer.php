@@ -73,6 +73,7 @@ class TwigPageRenderer implements IPageRenderer
             self::PAGE_INDEX => 'index.html.twig',
             self::PAGE_REPORTS => 'reports.html.twig',
             self::PAGE_USERS => 'users.html.twig',
+            self::PAGE_GROUPS => 'groups.html.twig',
             self::PAGE_SECURITY => 'security.html.twig',
             self::PAGE_ADMIN => 'admin.html.twig',
             self::PAGE_PROFILE => 'profile.html.twig',
