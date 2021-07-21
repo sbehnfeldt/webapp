@@ -36,6 +36,11 @@ form {
       &::placeholder {
         font-style: italic;
       }
+
+      &.modified {
+        color: $color-secondary-1-4;
+        background-color: $color-complement-1;
+      }
     }
 
     button {

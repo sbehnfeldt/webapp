@@ -136,8 +136,8 @@ class ApiApp extends App
             $newUser->setUsername($_POST['Username']);
             $newUser->setEmail($_POST['Email']);
             $newUser->setPassword(password_hash('password', PASSWORD_DEFAULT));
-            $b = $newUser->save();
-            $api->getLogger()->info(sprintf('New user "%s" (user ID %d") added by user "%s"', $newUser->getUsername(), $newUser->getId(), $user->getUsername()));
+//            $b = $newUser->save();
+//            $api->getLogger()->info(sprintf('New user "%s" (user ID %d") added by user "%s"', $newUser->getUsername(), $newUser->getId(), $user->getUsername()));
 
             $resp = $resp->withStatus(201, 'Created');
             $resp = $resp->withHeader('Content-Type', 'application/json');
@@ -145,6 +145,17 @@ class ApiApp extends App
 
             return $resp;
         })->add($isAuthenticated);
+
+        // Update existing user
+        $this->put('/api/users/{id}', function (Request $req, Response $resp, array $args) use ($api) {
+            $body = $req->getParsedBody();
+
+            $user = UserQuery::create()->findPk($args[ 'id' ]);
+            array_key_exists( 'Email', $body) && $user->setEmail($body[ 'Email' ]);
+            $user->save();
+
+            return $resp;
+        });
 
 
         $this->get( '/api/permissions', function ( Request $req, Response $resp, array $args) use ($api) {

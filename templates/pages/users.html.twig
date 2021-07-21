@@ -9,14 +9,16 @@
 
     <div class="main main-users">
         <section class="users-list">
-            <h2>Users</h2>
+            <h2>All Users</h2>
             <ul id="users-list" class="selectable"></ul>
         </section>
 
         <section class="users-form">
+            <h2>User Attribute</h2>
             <div style="text-align: right">
                 <button id="new-user-button" disabled>New</button>
             </div>
+
             <form action="" id="users-form">
                 <div class="form-box">
                     <label for="">Name </label>
@@ -36,7 +38,7 @@
                 {% endfor %}
                 <div class="form-box">
                     <button id="save-user-button" type="submit" disabled>Save</button>
-                    <button id="cancel-user-form" type="reset" disabled>Cancel</button>
+                    <button id="cancel-form-button" type="reset" disabled>Cancel</button>
                 </div>
             </form>
         </section>
